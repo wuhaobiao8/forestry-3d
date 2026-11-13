@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智慧林业三维可视化平台</title>
+  <style>
+    :root{--bg:#04120a;--panel:rgba(7,27,48,.76);--line:rgba(76,222,128,.22);--cyan:#4ade80;--cyan-soft:#86efac;--blue:#22c55e;--teal:#a3e635;--text:#eafcf1;--muted:#8fbc9f;--danger:#ff6a6a;--shadow:0 24px 60px rgba(0,0,0,.38);--radius:22px}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:radial-gradient(circle at 20% 20%,rgba(22,101,52,.3),transparent 28%),radial-gradient(circle at 80% 10%,rgba(76,222,128,.12),transparent 20%),linear-gradient(180deg,#071510 0%,#020a06 100%);color:var(--text);font-family:"Bahnschrift","Segoe UI","Microsoft YaHei",sans-serif;overflow-x:hidden}
+    body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0}
+    body::before{background:linear-gradient(rgba(74,222,128,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(74,222,128,.045) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(circle at center,black 48%,transparent 88%)}
+    body::after{background:radial-gradient(circle at center,rgba(52,211,153,.05),transparent 36%),radial-gradient(circle at center,rgba(255,255,255,.025),transparent 70%);mix-blend-mode:screen}
+    .dashboard{position:relative;z-index:1;min-height:100vh;padding:18px 20px 24px}
+    .topbar{display:grid;grid-template-columns:1fr minmax(360px,620px) 1fr;align-items:center;gap:18px;margin-bottom:18px}
+    .status-band,.sys-band{display:flex;align-items:center;gap:12px;min-height:64px;padding:0 18px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(7,40,24,.86),rgba(4,18,11,.82));box-shadow:inset 0 0 18px rgba(34,197,94,.1)}
+    .status-band{justify-content:flex-start}.sys-band{justify-content:flex-end;flex-wrap:wrap}
+    .status-chip,.sys-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(74,222,128,.18);background:rgba(74,222,128,.06);color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+    .status-chip strong,.sys-chip strong{color:var(--text);font-weight:700}
+    .title-beam{position:relative;min-height:86px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:24px 24px 34px 34px;border:1px solid rgba(74,222,128,.22);background:linear-gradient(180deg,rgba(6,46,27,.98),rgba(4,26,16,.98));box-shadow:0 18px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden}
+    .title-beam::before,.title-beam::after{content:"";position:absolute;top:14px;bottom:14px;width:110px;border-top:2px solid rgba(74,222,128,.18);border-bottom:2px solid rgba(74,222,128,.12);opacity:.9}
+    .title-beam::before{left:-40px;transform:skewX(-36deg);background:linear-gradient(90deg,transparent,rgba(74,222,128,.12))}
+    .title-beam::after{right:-40px;transform:skewX(36deg);background:linear-gradient(-90deg,transparent,rgba(74,222,128,.12))}
+    .title-main{margin:0;font-size:clamp(26px,2.5vw,44px);font-weight:800;letter-spacing:.16em;text-shadow:0 0 24px rgba(74,222,128,.35)}
+    .title-sub{margin-top:6px;color:#a7e3bd;font-size:12px;letter-spacing:.35em;text-transform:uppercase}
+    .main-grid{display:grid;grid-template-columns:320px minmax(0,1fr) 320px;gap:18px;align-items:start}
+    .side-column,.center-column{display:grid;gap:18px}
+    .panel{position:relative;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(180deg,rgba(8,40,25,.9),rgba(4,18,11,.84));box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.03);overflow:hidden}
+    .panel::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(74,222,128,.06),transparent 34%),linear-gradient(225deg,rgba(34,197,94,.08),transparent 36%);pointer-events:none}
+    .panel-header{position:relative;z-index:1;min-height:58px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(34,197,94,.88),rgba(21,128,61,.86));clip-path:polygon(0 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,0 100%,12px 50%);box-shadow:inset 0 -1px 0 rgba(255,255,255,.12)}
+    .panel-header h2{margin:0;font-size:20px;font-weight:800;letter-spacing:.14em}
+    .panel-header small{color:rgba(232,247,255,.78);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+    .panel-body{position:relative;z-index:1;padding:18px}
+    .days-panel{display:grid;grid-template-columns:148px 1fr;gap:18px;align-items:center}
+    .days-ring{width:148px;height:148px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at center,rgba(4,26,16,.98) 45%,transparent 46%),conic-gradient(var(--cyan) 0 78%,rgba(74,222,128,.14) 78% 100%);border:1px solid rgba(74,222,128,.16);box-shadow:inset 0 0 22px rgba(74,222,128,.18)}
+    .days-ring::before{content:"";width:118px;height:118px;border-radius:50%;border:1px dashed rgba(74,222,128,.22);position:absolute;animation:spin 18s linear infinite}
+    .days-value{display:flex;flex-direction:column;align-items:center;gap:4px}.days-value strong{font-size:42px;line-height:1}.days-value span{font-size:12px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+    .stat-rows,.records,.status-list,.bar-track,.legend-list,.meta-grid{display:grid;gap:10px}
+    .stat-row,.status-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.1)}
+    .stat-row span,.status-item span,.summary-head p,.meta-card p,.hero-title,.footer-note,.bar-col span,.record-main span,.meta-row span,.legend-item span{color:var(--muted)}
+    .stat-row strong,.status-item strong{font-size:18px;color:var(--text)}
+    .metric-grid,.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .metric-card,.summary-item{padding:16px 14px;border-radius:18px;background:linear-gradient(180deg,rgba(8,35,61,.92),rgba(4,18,32,.84));border:1px solid rgba(74,222,128,.1);box-shadow:inset 0 0 16px rgba(74,222,128,.06)}
+    .metric-card .eyebrow,.summary-item span{font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+    .metric-card strong{display:block;margin-top:8px;font-size:30px;line-height:1}.metric-card span{display:block;margin-top:10px;font-size:12px;color:#9cc7df}
+    .radar-panel,.ring-panel{display:grid;grid-template-columns:160px 1fr;gap:16px;align-items:center}.ring-panel{grid-template-columns:1fr 1fr}
+    .radar-shell{position:relative;width:160px;height:160px;margin:0 auto}.radar-shell svg{width:100%;height:100%;overflow:visible}
+    .bar-track label,.meta-row,.legend-item,.hero-top,.summary-head,.footer-note{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .bar-track label{font-size:12px}.progress{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(74,222,128,.08)}
+    .progress span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--teal));box-shadow:0 0 14px rgba(74,222,128,.28)}
+    .hero-panel{padding:18px;min-height:760px;display:grid;grid-template-rows:auto 1fr auto;gap:18px}
+    .hero-tagline,.hero-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .hero-chip,.status-tag,.record-level,.action-button,.ghost-button{border-radius:999px}
+    .hero-chip{padding:8px 14px;border:1px solid rgba(74,222,128,.14);background:rgba(74,222,128,.06);color:#bde8ff;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+    .action-button,.ghost-button,.data-select{min-height:42px;padding:9px 16px;border:1px solid rgba(74,222,128,.18);font-size:13px;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:.2s ease}
+    .action-button{color:#fff;background:linear-gradient(135deg,var(--blue),#1ec8ff);box-shadow:0 14px 24px rgba(34,197,94,.24)}
+    .ghost-button{color:var(--cyan-soft);background:rgba(74,222,128,.06)}
+    .data-select{min-width:220px;border-radius:16px;background:linear-gradient(180deg,rgba(10,36,61,.96),rgba(4,17,31,.92));color:var(--text);box-shadow:inset 0 0 18px rgba(74,222,128,.08);appearance:none}
+    .data-select:focus{outline:none;border-color:rgba(74,222,128,.38);box-shadow:0 0 0 3px rgba(74,222,128,.1)}
+    #local-data-input{display:none}
+    .action-button:hover,.ghost-button:hover,.data-select:hover{transform:translateY(-1px);border-color:rgba(74,222,128,.32)}
+    .scene-wrapper{position:relative;border-radius:30px;border:1px solid rgba(74,222,128,.12);background:radial-gradient(circle at center,rgba(74,222,128,.1),transparent 34%),linear-gradient(180deg,rgba(9,24,42,.92),rgba(4,12,24,.94));overflow:hidden;min-height:560px}
+    .scene-wrapper::before,.scene-wrapper::after{content:"";position:absolute;inset:0;pointer-events:none}
+    .scene-wrapper::before{background:radial-gradient(circle at center,rgba(255,255,255,.08),transparent 48%),linear-gradient(rgba(74,222,128,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(74,222,128,.04) 1px,transparent 1px);background-size:auto,36px 36px,36px 36px;mask-image:radial-gradient(circle at center,black 54%,transparent 100%)}
+    .scene-wrapper::after{background:linear-gradient(180deg,rgba(6,18,33,.04),rgba(2,8,16,.56))}
+    .scene-stage{position:absolute;inset:0;padding:26px;display:grid;grid-template-columns:76px 1fr;gap:18px;align-items:center}
+    .control-rail{display:grid;gap:12px;align-content:center;z-index:2}
+    .control-pill{padding:12px 10px;text-align:center;border-radius:16px;border:1px solid rgba(74,222,128,.18);background:linear-gradient(180deg,rgba(14,53,91,.9),rgba(6,25,44,.86));color:#dff7ff;font-size:12px;letter-spacing:.12em;box-shadow:inset 0 0 18px rgba(74,222,128,.08)}
+    .terrain-arena{position:relative;height:100%;min-height:500px;display:grid;place-items:center}
+    .mine-view{position:relative;width:min(68vw,780px);height:min(48vw,520px);min-width:min(100%,560px);min-height:360px;border-radius:30px;border:1px solid rgba(74,222,128,.16);background:radial-gradient(circle at 50% 30%,rgba(74,222,128,.12),transparent 44%),linear-gradient(180deg,rgba(6,18,33,.45),rgba(2,8,16,.78));box-shadow:inset 0 0 50px rgba(74,222,128,.08),0 22px 45px rgba(0,0,0,.28);overflow:hidden}
+    .mine-view::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(74,222,128,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(74,222,128,.035) 1px,transparent 1px);background-size:34px 34px;pointer-events:none}
+    .mine-view canvas{display:block;width:100%;height:100%}
+    .terrain-halo{position:absolute;width:72%;height:60%;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.24),transparent 68%);filter:blur(24px);transform:translateY(90px)}
+    .terrain-shadow{position:absolute;width:min(62vw,640px);height:140px;border-radius:50%;background:radial-gradient(circle,rgba(17,33,54,.88),transparent 66%);filter:blur(16px);transform:translate(70px,175px)}
+    .terrain-cluster{position:relative;width:min(62vw,700px);aspect-ratio:1.24/1;transform-style:preserve-3d;transform:rotateX(63deg) rotateZ(-34deg);filter:drop-shadow(0 45px 55px rgba(0,0,0,.38))}
+    .terrain-slice{position:absolute;inset:0;border-radius:30px;background-size:cover;background-position:center;border:1px solid rgba(189,236,255,.18);box-shadow:inset 0 0 30px rgba(255,255,255,.06);overflow:hidden;transform-origin:center center}
+    .terrain-slice::before,.terrain-slice::after{content:"";position:absolute;left:0;right:0;pointer-events:none}
+    .terrain-slice::before{top:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 20%,transparent 74%,rgba(3,12,22,.26)),linear-gradient(90deg,rgba(255,255,255,.06),transparent 28%,transparent 72%,rgba(0,0,0,.16));mix-blend-mode:screen}
+    .terrain-slice::after{top:calc(100% - 1px);height:34px;border-radius:0 0 28px 28px;background:linear-gradient(180deg,rgba(255,226,195,.7),rgba(142,103,77,.74)),linear-gradient(90deg,rgba(255,255,255,.15),transparent 30%);box-shadow:0 6px 10px rgba(0,0,0,.16)}
+    .terrain-slice.top{background-image:none;background-color:rgba(24,70,42,.32);z-index:8}.terrain-slice.top::after{height:26px;background:linear-gradient(180deg,rgba(185,151,123,.94),rgba(128,93,69,.88))}
+    .terrain-surface{position:absolute;inset:0;border-radius:inherit;overflow:hidden}#terrain-canvas{width:100%;height:100%;display:block;background:linear-gradient(180deg,#294f2e,#141f1a);filter:saturate(1.1) contrast(1.08)}
+    .scan-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(74,222,128,.08),transparent 22%,transparent 78%,rgba(74,222,128,.08)),linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:auto,100% 6px;mix-blend-mode:screen;pointer-events:none}
+    .scan-line{position:absolute;left:-10%;right:-10%;top:0;height:18%;background:linear-gradient(180deg,rgba(74,222,128,0),rgba(74,222,128,.18),rgba(74,222,128,0));filter:blur(14px);animation:sweep 5.8s ease-in-out infinite;pointer-events:none}
+    .scene-tag{position:absolute;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;background:rgba(9,33,55,.84);border:1px solid rgba(74,222,128,.16);color:#dff7ff;font-size:12px;letter-spacing:.08em;box-shadow:0 10px 20px rgba(0,0,0,.24);z-index:2}
+    .scene-tag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px rgba(53,240,221,.7)}
+    .scene-tag.top-left{left:16%;top:16%}.scene-tag.top-right{right:10%;top:18%}.scene-tag.center-right{right:6%;top:42%}.scene-tag.bottom-left{left:12%;bottom:20%}.scene-tag.bottom-right{right:18%;bottom:14%}
+    .hero-bottom{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:stretch}
+    .summary-card,.meta-card{min-height:156px;padding:18px;border-radius:24px;border:1px solid rgba(74,222,128,.12);background:linear-gradient(180deg,rgba(7,28,49,.92),rgba(3,13,26,.86))}
+    .summary-head h3,.meta-card h3{margin:0;font-size:22px;letter-spacing:.08em}
+    .summary-head p,.meta-card p{margin:8px 0 0;font-size:13px;line-height:1.7}
+    .summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .summary-item strong{display:block;margin-top:8px;font-size:24px;line-height:1.1}
+    .meta-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}.meta-row:last-child,.record-item:last-child{border-bottom:none}.meta-row strong{color:var(--text);text-align:right;word-break:break-all}
+    .ring-chart{width:176px;height:176px;margin:0 auto;border-radius:50%;background:radial-gradient(circle at center,rgba(4,26,16,.98) 42%,transparent 43%),conic-gradient(var(--cyan) 0 30%,#34f0dd 30% 58%,#ffe172 58% 82%,#1f8dff 82% 100%);position:relative;box-shadow:inset 0 0 20px rgba(74,222,128,.15)}
+    .ring-chart::after{content:"风险指数\A 87.4";white-space:pre;position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-size:14px;color:var(--text);font-weight:700;letter-spacing:.1em}
+    .legend-item b{display:inline-flex;align-items:center;gap:8px;font-weight:600}.legend-item b::before{content:"";width:11px;height:11px;border-radius:50%;background:var(--item-color,var(--cyan));box-shadow:0 0 10px var(--item-color,var(--cyan))}
+    .bars-panel{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;align-items:end;min-height:236px;padding-top:20px}
+    .bar-col{display:flex;flex-direction:column;align-items:center;gap:8px}.bar{width:100%;min-height:30px;height:calc(var(--h) * 1%);border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,rgba(74,222,128,.92),rgba(34,197,94,.34));box-shadow:0 0 12px rgba(74,222,128,.18);position:relative;overflow:hidden}.bar::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 36%)}
+    .record-item{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .record-index{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.14);color:var(--cyan-soft);font-size:12px;font-weight:700}
+    .record-main strong{display:block;font-size:13px;line-height:1.5}.record-main span{font-size:12px}
+    .record-level,.status-tag{padding:6px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+    .record-level.high{color:#ffd7d7;background:rgba(255,106,106,.12);border:1px solid rgba(255,106,106,.18)}.record-level.medium{color:#ffe6b1;background:rgba(255,199,101,.12);border:1px solid rgba(255,199,101,.18)}
+    .status-tag{color:#c7ffe8;background:rgba(53,240,221,.12);border:1px solid rgba(53,240,221,.18)}
+    .status-banner{padding:10px 14px;border-radius:16px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.12)}.status-banner.error{color:#ffd7d7;background:rgba(255,106,106,.1);border-color:rgba(255,106,106,.18)}
+    @keyframes sweep{0%{transform:translateY(-26%)}50%{transform:translateY(280%)}100%{transform:translateY(560%)}}@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    @media (max-width:1500px){.main-grid{grid-template-columns:280px minmax(0,1fr) 280px}.hero-bottom{grid-template-columns:1fr}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:1220px){.topbar,.main-grid,.days-panel,.radar-panel,.ring-panel,.hero-bottom{grid-template-columns:1fr}.scene-stage{grid-template-columns:1fr}.control-rail{grid-auto-flow:column;justify-content:center;align-content:start}.terrain-arena{min-height:440px}}
+    @media (max-width:760px){.dashboard{padding:14px}.hero-panel{min-height:auto}.summary-grid,.metric-grid{grid-template-columns:1fr}.terrain-cluster{width:94%}.scene-tag{display:none}.status-band,.sys-band{padding:10px 12px}.title-main{letter-spacing:.08em}}
+  </style>
+<style id="gvz-style">/* ===== geoviz enhance styles ===== */
+.gvz-toasts { position: fixed; top: 16px; right: 16px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.gvz-toast { padding: 9px 14px; border-radius: 10px; font-size: 12.5px;
+  color: #eaf6ff; background: rgba(9, 30, 52, 0.92);
+  border: 1px solid var(--gvz-accent, #4fd4ff);
+  box-shadow: 0 10px 26px rgba(0,0,0,.4);
+  transform: translateX(24px); opacity: 0;
+  transition: transform .28s cubic-bezier(.2,.9,.3,1.2), opacity .28s; }
+.gvz-toast.show { transform: none; opacity: 1; }
+.gvz-toast.gvz-ok { border-color: #4ade80; color: #d8ffe8; }
+.gvz-toast.gvz-err { border-color: #ff6a6a; color: #ffe4e4; }
+
+.gvz-ripple { position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, var(--gvz-accent, #4fd4ff) 0%, transparent 62%);
+  opacity: .5; transform: scale(0); pointer-events: none;
+  animation: gvz-ripple .66s ease-out forwards; }
+@keyframes gvz-ripple { to { transform: scale(1); opacity: 0; } }
+
+.gvz-dock { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  z-index: 60; display: flex; flex-direction: column; gap: 6px; align-items: center;
+  padding: 10px 14px; border-radius: 16px;
+  border: 1px solid var(--gvz-line, rgba(74,222,128,.28));
+  background: rgba(5, 16, 30, .82); backdrop-filter: blur(9px);
+  box-shadow: 0 14px 34px rgba(0,0,0,.42); }
+.gvz-dock-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  justify-content: center; }
+.gvz-dock-label { font-size: 11px; letter-spacing: .12em; color: var(--gvz-muted, #8fa8bf);
+  text-transform: uppercase; }
+.gvz-dock-sep { width: 1px; height: 16px; background: var(--gvz-line, rgba(74,222,128,.3)); }
+.gvz-btn { padding: 5px 11px; border-radius: 9px; cursor: pointer;
+  font-size: 12px; font-family: inherit; color: var(--gvz-text, #dff2ff);
+  border: 1px solid var(--gvz-line, rgba(74,222,128,.3));
+  background: rgba(20, 48, 78, .55); position: relative; overflow: hidden;
+  transition: transform .12s, border-color .15s, background .15s; }
+.gvz-btn:hover { border-color: var(--gvz-accent, #4fd4ff); background: rgba(30, 70, 110, .7);
+  transform: translateY(-1px); }
+.gvz-btn:active { transform: translateY(0) scale(.96); }
+.gvz-btn.active { background: var(--gvz-accent, #4fd4ff); color: #04121f;
+  border-color: transparent; font-weight: 700; }
+.gvz-btn #gvz-rotate { min-width: 92px; }
+.gvz-val { font-size: 11px; color: var(--gvz-text, #dff2ff); min-width: 30px; }
+#gvz-size { width: 92px; accent-color: var(--gvz-accent, #4fd4ff); }
+
+.gvz-live-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+  margin-right: 6px; background: #3a5a78; transition: background .8s, box-shadow .8s; }
+.gvz-live-dot.on { background: var(--gvz-accent, #4fd4ff);
+  box-shadow: 0 0 8px var(--gvz-accent, #4fd4ff); }
+
+.bar { transition: width 1.4s cubic-bezier(.25,.8,.3,1); }
+
+/* Forestry theme overrides (applied via body[data-gvz-theme="forest"]) */
+body[data-gvz-theme="forest"] { --gvz-accent: #4ade80; --gvz-line: rgba(74,222,128,.32);
+  --gvz-muted: #8fbc9f; --gvz-text: #e8fdf1; }
+body[data-gvz-theme="forest"] .gvz-toast { background: rgba(6, 34, 20, .92);
+  color: #e2ffef; }
+body[data-gvz-theme="forest"] .gvz-dock { background: rgba(4, 24, 14, .84);
+  border-color: rgba(74,222,128,.3); }
+body[data-gvz-theme="forest"] .gvz-btn { background: rgba(18, 58, 36, .55);
+  color: var(--gvz-text); border-color: rgba(74,222,128,.3); }
+body[data-gvz-theme="forest"] .gvz-btn:hover { background: rgba(24, 82, 48, .75); }
+body[data-gvz-theme="forest"] .gvz-btn.active { background: #4ade80; color: #04170b; }
+body[data-gvz-theme="forest"] .gvz-live-dot { background: #2f5c40; }
+body[data-gvz-theme="forest"] .gvz-live-dot.on { background: #4ade80;
+  box-shadow: 0 0 8px #4ade80; }
+</style>
+<style id="gvz-style">/* ===== geoviz enhance styles ===== */
+.gvz-toasts { position: fixed; top: 16px; right: 16px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.gvz-toast { padding: 9px 14px; border-radius: 10px; font-size: 12.5px;
+  color: #eaf6ff; background: rgba(9, 30, 52, 0.92);
+  border: 1px solid var(--gvz-accent, #4fd4ff);
+  box-shadow: 0 10px 26px rgba(0,0,0,.4);
+  transform: translateX(24px); opacity: 0;
+  transition: transform .28s cubic-bezier(.2,.9,.3,1.2), opacity .28s; }
+.gvz-toast.show { transform: none; opacity: 1; }
+.gvz-toast.gvz-ok { border-color: #4ade80; color: #d8ffe8; }
+.gvz-toast.gvz-err { border-color: #ff6a6a; color: #ffe4e4; }
+
+.gvz-ripple { position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, var(--gvz-accent, #4fd4ff) 0%, transparent 62%);
+  opacity: .5; transform: scale(0); pointer-events: none;
+  animation: gvz-ripple .66s ease-out forwards; }
+@keyframes gvz-ripple { to { transform: scale(1); opacity: 0; } }
+
+.gvz-dock { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  z-index: 60; display: flex; flex-direction: column; gap: 6px; align-items: center;
+  padding: 10px 14px; border-radius: 16px;
+  border: 1px solid var(--gvz-line, rgba(74,222,128,.28));
+  background: rgba(5, 16, 30, .82); backdrop-filter: blur(9px);
+  box-shadow: 0 14px 34px rgba(0,0,0,.42); }
+.gvz-dock-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  justify-content: center; }
+.gvz-dock-label { font-size: 11px; letter-spacing: .12em; color: var(--gvz-muted, #8fa8bf);
+  text-transform: uppercase; }
+.gvz-dock-sep { width: 1px; height: 16px; background: var(--gvz-line, rgba(74,222,128,.3)); }
+.gvz-btn { padding: 5px 11px; border-radius: 9px; cursor: pointer;
+  font-size: 12px; font-family: inherit; color: var(--gvz-text, #dff2ff);
+  border: 1px solid var(--gvz-line, rgba(74,222,128,.3));
+  background: rgba(20, 48, 78, .55); position: relative; overflow: hidden;
+  transition: transform .12s, border-color .15s, background .15s; }
+.gvz-btn:hover { border-color: var(--gvz-accent, #4fd4ff); background: rgba(30, 70, 110, .7);
+  transform: translateY(-1px); }
+.gvz-btn:active { transform: translateY(0) scale(.96); }
+.gvz-btn.active { background: var(--gvz-accent, #4fd4ff); color: #04121f;
+  border-color: transparent; font-weight: 700; }
+.gvz-btn #gvz-rotate { min-width: 92px; }
+.gvz-val { font-size: 11px; color: var(--gvz-text, #dff2ff); min-width: 30px; }
+#gvz-size { width: 92px; accent-color: var(--gvz-accent, #4fd4ff); }
+
+.gvz-live-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+  margin-right: 6px; background: #3a5a78; transition: background .8s, box-shadow .8s; }
+.gvz-live-dot.on { background: var(--gvz-accent, #4fd4ff);
+  box-shadow: 0 0 8px var(--gvz-accent, #4fd4ff); }
+
+#gvz-credit { position: absolute; right: 10px; bottom: 8px; z-index: 55;
+  font-size: 10px; color: rgba(255,255,255,.75); letter-spacing: .02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+
+.bar { transition: width 1.4s cubic-bezier(.25,.8,.3,1); }
+
+.control-pill { cursor: pointer; position: relative; overflow: hidden;
+  transition: transform .12s, border-color .15s, background .15s; }
+.control-pill:hover { transform: translateY(-1px); }
+.control-pill.active { background: var(--gvz-accent, #4fd4ff) !important;
+  color: #04121f !important; font-weight: 700; }
+body[data-gvz-theme="forest"] .control-pill.active { color: #04170b !important; }
+
+/* Forestry theme overrides (applied via body[data-gvz-theme="forest"]) */
+body[data-gvz-theme="forest"] { --gvz-accent: #4ade80; --gvz-line: rgba(74,222,128,.32);
+  --gvz-muted: #8fbc9f; --gvz-text: #e8fdf1; }
+body[data-gvz-theme="forest"] .gvz-toast { background: rgba(6, 34, 20, .92);
+  color: #e2ffef; }
+body[data-gvz-theme="forest"] .gvz-dock { background: rgba(4, 24, 14, .84);
+  border-color: rgba(74,222,128,.3); }
+body[data-gvz-theme="forest"] .gvz-btn { background: rgba(18, 58, 36, .55);
+  color: var(--gvz-text); border-color: rgba(74,222,128,.3); }
+body[data-gvz-theme="forest"] .gvz-btn:hover { background: rgba(24, 82, 48, .75); }
+body[data-gvz-theme="forest"] .gvz-btn.active { background: #4ade80; color: #04170b; }
+body[data-gvz-theme="forest"] .gvz-live-dot { background: #2f5c40; }
+body[data-gvz-theme="forest"] .gvz-live-dot.on { background: #4ade80;
+  box-shadow: 0 0 8px #4ade80; }
+</style>
+<style id="gvz-style">/* ===== geoviz enhance styles ===== */
+.gvz-toasts { position: fixed; top: 16px; right: 16px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.gvz-toast { padding: 9px 14px; border-radius: 10px; font-size: 12.5px;
+  color: #eaf6ff; background: rgba(9, 30, 52, 0.92);
+  border: 1px solid var(--gvz-accent, #4fd4ff);
+  box-shadow: 0 10px 26px rgba(0,0,0,.4);
+  transform: translateX(24px); opacity: 0;
+  transition: transform .28s cubic-bezier(.2,.9,.3,1.2), opacity .28s; }
+.gvz-toast.show { transform: none; opacity: 1; }
+.gvz-toast.gvz-ok { border-color: #4ade80; color: #d8ffe8; }
+.gvz-toast.gvz-err { border-color: #ff6a6a; color: #ffe4e4; }
+
+.gvz-ripple { position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, var(--gvz-accent, #4fd4ff) 0%, transparent 62%);
+  opacity: .5; transform: scale(0); pointer-events: none;
+  animation: gvz-ripple .66s ease-out forwards; }
+@keyframes gvz-ripple { to { transform: scale(1); opacity: 0; } }
+
+.gvz-dock { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  z-index: 60; display: flex; flex-direction: column; gap: 6px; align-items: center;
+  padding: 10px 14px; border-radius: 16px;
+  border: 1px solid var(--gvz-line, rgba(79,212,255,.28));
+  background: rgba(5, 16, 30, .82); backdrop-filter: blur(9px);
+  box-shadow: 0 14px 34px rgba(0,0,0,.42); }
+.gvz-dock-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  justify-content: center; }
+.gvz-dock-label { font-size: 11px; letter-spacing: .12em; color: var(--gvz-muted, #8fa8bf);
+  text-transform: uppercase; }
+.gvz-dock-sep { width: 1px; height: 16px; background: var(--gvz-line, rgba(79,212,255,.3)); }
+.gvz-btn { padding: 5px 11px; border-radius: 9px; cursor: pointer;
+  font-size: 12px; font-family: inherit; color: var(--gvz-text, #dff2ff);
+  border: 1px solid var(--gvz-line, rgba(79,212,255,.3));
+  background: rgba(20, 48, 78, .55); position: relative; overflow: hidden;
+  transition: transform .12s, border-color .15s, background .15s; }
+.gvz-btn:hover { border-color: var(--gvz-accent, #4fd4ff); background: rgba(30, 70, 110, .7);
+  transform: translateY(-1px); }
+.gvz-btn:active { transform: translateY(0) scale(.96); }
+.gvz-btn.active { background: var(--gvz-accent, #4fd4ff); color: #04121f;
+  border-color: transparent; font-weight: 700; }
+.gvz-btn #gvz-rotate { min-width: 92px; }
+.gvz-val { font-size: 11px; color: var(--gvz-text, #dff2ff); min-width: 30px; }
+#gvz-size { width: 92px; accent-color: var(--gvz-accent, #4fd4ff); }
+
+.gvz-live-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+  margin-right: 6px; background: #3a5a78; transition: background .8s, box-shadow .8s; }
+.gvz-live-dot.on { background: var(--gvz-accent, #4fd4ff);
+  box-shadow: 0 0 8px var(--gvz-accent, #4fd4ff); }
+
+#gvz-credit { position: absolute; right: 10px; bottom: 8px; z-index: 55;
+  font-size: 10px; color: rgba(255,255,255,.75); letter-spacing: .02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+
+.bar { transition: width 1.4s cubic-bezier(.25,.8,.3,1); }
+
+.control-pill { cursor: pointer; position: relative; overflow: hidden;
+  transition: transform .12s, border-color .15s, background .15s; }
+.control-pill:hover { transform: translateY(-1px); }
+.control-pill.active { background: var(--gvz-accent, #4fd4ff) !important;
+  color: #04121f !important; font-weight: 700; }
+body[data-gvz-theme="forest"] .control-pill.active { color: #04170b !important; }
+
+/* Forestry theme overrides (applied via body[data-gvz-theme="forest"]) */
+body[data-gvz-theme="forest"] { --gvz-accent: #4ade80; --gvz-line: rgba(74,222,128,.32);
+  --gvz-muted: #8fbc9f; --gvz-text: #e8fdf1; }
+body[data-gvz-theme="forest"] .gvz-toast { background: rgba(6, 34, 20, .92);
+  color: #e2ffef; }
+body[data-gvz-theme="forest"] .gvz-dock { background: rgba(4, 24, 14, .84);
+  border-color: rgba(74,222,128,.3); }
+body[data-gvz-theme="forest"] .gvz-btn { background: rgba(18, 58, 36, .55);
+  color: var(--gvz-text); border-color: rgba(74,222,128,.3); }
+body[data-gvz-theme="forest"] .gvz-btn:hover { background: rgba(24, 82, 48, .75); }
+body[data-gvz-theme="forest"] .gvz-btn.active { background: #4ade80; color: #04170b; }
+body[data-gvz-theme="forest"] .gvz-live-dot { background: #2f5c40; }
+body[data-gvz-theme="forest"] .gvz-live-dot.on { background: #4ade80;
+  box-shadow: 0 0 8px #4ade80; }
+</style>
+</head>
+<body data-gvz-theme="forest">
+  <div class="dashboard">
+    <header class="topbar">
+      <div class="status-band">
+        <div class="status-chip"><strong id="clock">--:--:--</strong></div>
+        <div class="status-chip"><strong>北斗授时</strong> 已锁定</div>
+        <div class="status-chip"><strong>地形解算</strong> 运行中</div>
+      </div>
+      <div class="title-beam">
+        <h1 class="title-main">智慧林业三维可视化平台</h1>
+        <div class="title-sub">Smart Forestry 3D Command Display</div>
+      </div>
+      <div class="sys-band">
+        <div class="sys-chip"><strong>公网预览</strong> Static Ready</div>
+        <div class="sys-chip"><strong>数据目录</strong> Catalog Ready</div>
+        <div class="sys-chip"><strong>系统状态</strong> Online</div>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <aside class="side-column">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>管护运行天数</h2>
+            <small>Safe Run</small>
+          </div>
+          <div class="panel-body days-panel">
+            <div class="days-ring">
+              <div class="days-value">
+                <strong>375</strong>
+                <span>Days</span>
+              </div>
+            </div>
+            <div class="stat-rows">
+              <div class="stat-row"><span>连续稳定管护</span><strong>375 天</strong></div>
+              <div class="stat-row"><span>林区巡护完成率</span><strong>98.6%</strong></div>
+              <div class="stat-row"><span>防火监测健康度</span><strong>93.2%</strong></div>
+              <div class="stat-row"><span>今日重大告警</span><strong>0 条</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>监测设备统计</h2>
+            <small>Equipment</small>
+          </div>
+          <div class="panel-body metric-grid">
+            <div class="metric-card"><div class="eyebrow">钻机系统</div><strong>03</strong><span>运行良好 / 1 台待保养</span></div>
+            <div class="metric-card"><div class="eyebrow">运输车辆</div><strong>09</strong><span>自动调度 / 空载率 11%</span></div>
+            <div class="metric-card"><div class="eyebrow">防火监测</div><strong>05</strong><span>气象平稳 / 火险值下降</span></div>
+            <div class="metric-card"><div class="eyebrow">排水系统</div><strong>06</strong><span>抽排能力 98% 在线</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>林分结构雷达</h2>
+            <small>Device Radar</small>
+          </div>
+          <div class="panel-body radar-panel">
+            <div class="radar-shell">
+              <svg viewBox="0 0 160 160" aria-hidden="true">
+                <g stroke="rgba(74,222,128,0.15)" fill="none">
+                  <polygon points="80,12 140,48 124,120 36,120 20,48"></polygon>
+                  <polygon points="80,28 124,54 112,106 48,106 36,54"></polygon>
+                  <polygon points="80,44 110,60 101,92 59,92 50,60"></polygon>
+                  <line x1="80" y1="12" x2="80" y2="120"></line>
+                  <line x1="20" y1="48" x2="140" y2="48"></line>
+                  <line x1="36" y1="120" x2="124" y2="120"></line>
+                </g>
+                <polygon points="80,30 122,58 102,103 54,96 46,56" fill="rgba(74,222,128,0.22)" stroke="rgba(74,222,128,0.86)" stroke-width="2"></polygon>
+                <polygon points="80,40 112,60 96,94 60,90 56,62" fill="rgba(53,240,221,0.12)" stroke="rgba(53,240,221,0.75)" stroke-width="2"></polygon>
+              </svg>
+            </div>
+            <div class="radar-labels">
+              <div class="bar-track"><label><span>监控系统</span><strong>91%</strong></label><div class="progress"><span style="width:91%"></span></div></div>
+              <div class="bar-track"><label><span>传感网络</span><strong>87%</strong></label><div class="progress"><span style="width:87%"></span></div></div>
+              <div class="bar-track"><label><span>消防联动</span><strong>95%</strong></label><div class="progress"><span style="width:95%"></span></div></div>
+              <div class="bar-track"><label><span>调压系统</span><strong>82%</strong></label><div class="progress"><span style="width:82%"></span></div></div>
+              <div class="bar-track"><label><span>定位系统</span><strong>89%</strong></label><div class="progress"><span style="width:89%"></span></div></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="center-column">
+        <section class="panel hero-panel">
+          <div class="hero-top">
+            <div>
+              <p class="hero-title">三维林区主场景 / 首页默认打开内置高质感三维示例，同时支持仓库示意点云与本地林区数据切换</p>
+              <div class="hero-tagline">
+                <div class="hero-chip">数据目录切换</div>
+                <div class="hero-chip">点云示意</div>
+                <div class="hero-chip">样地分析</div>
+                <div class="hero-chip">GeoTIFF 林相</div>
+                <div class="hero-chip">公开链接可见</div>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <select id="dataset-select" class="data-select" aria-label="选择示意数据">
+                <option value="builtin-demo">内置 3D 林区样区</option>
+              </select>
+              <button id="load-dataset" class="ghost-button" type="button">加载示意数据</button>
+              <label class="action-button" for="local-data-input">上传本地数据</label>
+              <input id="local-data-input" type="file" accept=".json,.tif,.tiff,application/json,image/tiff">
+              <button id="reload-default" class="ghost-button" type="button">恢复首页示例</button>
+            </div>
+          </div>
+
+          <div class="scene-wrapper">
+            <div class="scene-stage">
+              <div class="control-rail">
+                <div class="control-pill">总览</div>
+                <div class="control-pill">综合集控</div>
+                <div class="control-pill">安全生产</div>
+                <div class="control-pill">样地分析</div>
+                <div class="control-pill">智能巡检</div>
+              </div>
+
+              <div class="terrain-arena">
+                <div class="terrain-halo"></div>
+                <div class="terrain-shadow"></div>
+                <div id="mine-view" class="mine-view"></div>
+                <div class="scene-tag top-left">监测样地</div>
+                <div class="scene-tag top-right">核心样林区</div>
+                <div class="scene-tag center-right">苗圃培育区</div>
+                <div class="scene-tag bottom-left">退耕恢复带</div>
+                <div class="scene-tag bottom-right">巡护车通道</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-bottom">
+            <div class="summary-card">
+              <div class="summary-head">
+                <div>
+                  <h3>林区数据接入与示意展示</h3>
+                  <p>这个首页已经预留好了“仓库示意数据 + 本地上传”的完整入口。别人可以直接切换 <code>assets/data/catalog.json</code> 里的示意数据，也可以上传自己的 <code>.json</code> 点云示意或 <code>.tif/.tiff</code> 地形数据。</p>
+                </div>
+              </div>
+              <div class="summary-grid">
+                <div class="summary-item"><span>默认首页</span><strong>内置 3D 场景</strong></div>
+                <div class="summary-item"><span>仓库示意数据</span><strong>DA1 轻量点云</strong></div>
+                <div class="summary-item"><span>本地上传</span><strong>JSON / TIFF</strong></div>
+                <div class="summary-item"><span>替换目录</span><strong>assets/data</strong></div>
+              </div>
+            </div>
+
+            <div class="meta-card">
+              <h3>当前数据源信息</h3>
+              <p>这里显示当前场景的数据类型、来源路径、尺寸范围和渲染方式，方便后续直接替换示意数据。</p>
+              <div class="meta-grid">
+                <div class="meta-row"><span>当前模式</span><strong id="meta-name">内置 3D 示例</strong></div>
+                <div class="meta-row"><span>来源</span><strong id="meta-source">仓库示例场景</strong></div>
+                <div class="meta-row"><span>尺寸 / 范围</span><strong id="meta-dimensions">-</strong></div>
+                <div class="meta-row"><span>数据明细</span><strong id="meta-pages">-</strong></div>
+                <div class="meta-row"><span>属性字段</span><strong id="meta-channels">-</strong></div>
+                <div class="meta-row"><span>渲染方式</span><strong id="meta-bits">-</strong></div>
+                <div class="meta-row"><span>文件大小</span><strong id="meta-size">-</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="side-column">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>火险预警频谱</h2>
+            <small>Warning Spectrum</small>
+          </div>
+          <div class="panel-body ring-panel">
+            <div class="ring-chart"></div>
+            <div class="legend-list">
+              <div class="legend-item"><b style="--item-color:#4fd4ff">边坡监测</b><span>30%</span></div>
+              <div class="legend-item"><b style="--item-color:#34f0dd">火险等级</b><span>28%</span></div>
+              <div class="legend-item"><b style="--item-color:#ffe172">设备保养</b><span>24%</span></div>
+              <div class="legend-item"><b style="--item-color:#1f8dff">排水状态</b><span>18%</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>林区蓄积统计</h2>
+            <small>Output Chart</small>
+          </div>
+          <div class="panel-body">
+            <div class="bars-panel">
+              <div class="bar-col"><div class="bar" style="--h:58"></div><span>1月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:48"></div><span>2月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:46"></div><span>3月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:42"></div><span>4月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:69"></div><span>5月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:33"></div><span>6月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:76"></div><span>7月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:52"></div><span>8月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:71"></div><span>9月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:60"></div><span>10月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:49"></div><span>11月</span></div>
+              <div class="bar-col"><div class="bar" style="--h:79"></div><span>12月</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>巡护记录</h2>
+            <small>Event Stream</small>
+          </div>
+          <div class="panel-body records">
+            <div class="record-item"><div class="record-index">1</div><div class="record-main"><strong>七号边坡位移波动升高</strong><span>2026-04-13 20:32 · 自动复核完成</span></div><div class="record-level high">High</div></div>
+            <div class="record-item"><div class="record-index">2</div><div class="record-main"><strong>北区运输带检修工单触发</strong><span>2026-04-13 18:40 · 派单中</span></div><div class="record-level medium">Medium</div></div>
+            <div class="record-item"><div class="record-index">3</div><div class="record-main"><strong>井下风速数据短时离群</strong><span>2026-04-13 16:12 · 已恢复</span></div><div class="record-level medium">Medium</div></div>
+            <div class="record-item"><div class="record-index">4</div><div class="record-main"><strong>排水池液位接近阈值</strong><span>2026-04-13 12:05 · 联动排水启动</span></div><div class="record-level high">High</div></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>链路与发布状态</h2>
+            <small>Publish</small>
+          </div>
+          <div class="panel-body">
+            <div id="status-banner" class="status-banner">正在启动内置三维林区示例...</div>
+            <div class="status-list">
+              <div class="status-item"><span>仓库示意数据入口</span><div class="status-tag">Ready</div></div>
+              <div class="status-item"><span>本地 JSON / TIFF 上传</span><div class="status-tag">Ready</div></div>
+              <div class="status-item"><span>静态页面可直接部署</span><div class="status-tag">Ready</div></div>
+              <div class="status-item"><span>GitHub Pages 兼容</span><div class="status-tag">Ready</div></div>
+              <div class="status-item"><span>访客无需安装软件</span><div class="status-tag">Ready</div></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <div class="footer-note">
+      <div>默认访问逻辑：打开页面后先进入内置三维林区场景，也可以切换仓库示意点云，或上传本地 JSON / TIFF 数据。</div>
+      <div>替换目录：<code>assets/data/catalog.json</code>、<code>assets/data/pointcloud/</code>、<code>assets/data/README.md</code>。</div>
+    </div>
+  </div>
+
+  <script src="./assets/UTIF.min.js"></script>
+  <script type="module">
+    import * as THREE from "./assets/vendor/three.module.js";
+    import { OrbitControls } from "./assets/vendor/OrbitControls.js";
+
+    const mineView = document.getElementById("mine-view");
+    const clockEl = document.getElementById("clock");
+    const datasetSelect = document.getElementById("dataset-select");
+    const loadDatasetButton = document.getElementById("load-dataset");
+    const localDataInput = document.getElementById("local-data-input");
+    const reloadDefaultButton = document.getElementById("reload-default");
+    const statusBanner = document.getElementById("status-banner");
+    const metaEls = {
+      name: document.getElementById("meta-name"),
+      source: document.getElementById("meta-source"),
+      dimensions: document.getElementById("meta-dimensions"),
+      pages: document.getElementById("meta-pages"),
+      channels: document.getElementById("meta-channels"),
+      bits: document.getElementById("meta-bits"),
+      size: document.getElementById("meta-size")
+    };
+
+    let renderer;
+    let scene;
+    let camera;
+    let controls;
+    let terrainMesh;
+    let terrainGeometry;
+    let terrainHeightFn;
+    let facilityGroup;
+    let sparkGroup;
+    let pointCloudObject;
+    let datasetCatalog = { default: "builtin-demo", datasets: [] };
+
+    function updateClock() {
+      const now = new Date();
+      const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+      const time = [String(now.getHours()).padStart(2, "0"), String(now.getMinutes()).padStart(2, "0"), String(now.getSeconds()).padStart(2, "0")].join(":");
+      clockEl.textContent = `${date} ${time}`;
+    }
+
+    function setStatus(message, isError = false) {
+      statusBanner.textContent = message;
+      statusBanner.classList.toggle("error", Boolean(isError));
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return "-";
+      const units = ["B", "KB", "MB", "GB"];
+      let value = bytes;
+      let unitIndex = 0;
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+      return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function formatCount(value) {
+      return Number.isFinite(Number(value)) ? Number(value).toLocaleString("zh-CN") : "-";
+    }
+
+    function formatExtent(min, max) {
+      if (!Array.isArray(min) || !Array.isArray(max) || min.length < 3 || max.length < 3) {
+        return "-";
+      }
+      const dx = Number(max[0]) - Number(min[0]);
+      const dy = Number(max[1]) - Number(min[1]);
+      const dz = Number(max[2]) - Number(min[2]);
+      if (![dx, dy, dz].every(Number.isFinite)) return "-";
+      return `${dx.toFixed(1)} × ${dy.toFixed(1)} × ${dz.toFixed(1)} m`;
+    }
+
+    function updateMeta(meta) {
+      metaEls.name.textContent = meta.name || "-";
+      metaEls.source.textContent = meta.source || "-";
+      metaEls.dimensions.textContent = meta.dimensions || "-";
+      metaEls.pages.textContent = meta.pages || "-";
+      metaEls.channels.textContent = meta.channels || "-";
+      metaEls.bits.textContent = meta.bits || "-";
+      metaEls.size.textContent = meta.size || "-";
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function describeDatasetSource(source) {
+      return source ? String(source).replace(/^\.\//, "") : "-";
+    }
+
+    function clearPointCloud() {
+      if (!pointCloudObject) return;
+      scene.remove(pointCloudObject);
+      pointCloudObject.geometry.dispose();
+      pointCloudObject.material.dispose();
+      pointCloudObject = null;
+    }
+
+    function setSceneMode(mode) {
+      const terrainVisible = mode !== "pointcloud";
+      if (terrainMesh) terrainMesh.visible = terrainVisible;
+      if (facilityGroup) facilityGroup.visible = terrainVisible;
+      if (sparkGroup) sparkGroup.visible = terrainVisible;
+      if (pointCloudObject) pointCloudObject.visible = !terrainVisible;
+      if (controls) {
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = terrainVisible ? 0.45 : 0.28;
+      }
+    }
+
+    function resetCamera(target = new THREE.Vector3(0, 8, 0), offset = new THREE.Vector3(116, 118, 132), minDistance = 90, maxDistance = 240) {
+      camera.position.copy(offset);
+      controls.target.copy(target);
+      controls.minDistance = minDistance;
+      controls.maxDistance = maxDistance;
+      controls.update();
+    }
+
+    function focusPointCloud(minBounds, maxBounds) {
+      const min = new THREE.Vector3(...minBounds);
+      const max = new THREE.Vector3(...maxBounds);
+      const center = min.clone().add(max).multiplyScalar(0.5);
+      const size = max.clone().sub(min);
+      const span = Math.max(size.x, size.y, size.z, 32);
+      resetCamera(
+        center,
+        new THREE.Vector3(center.x + span * 1.45, center.y + span * 0.95 + 12, center.z + span * 1.2),
+        Math.max(span * 0.3, 18),
+        Math.max(span * 4.2, 180)
+      );
+    }
+
+    function validatePointCloudPayload(payload) {
+      if (!payload || payload.format !== "codex-point-cloud-v1") {
+        throw new Error("JSON 文件不是 codex-point-cloud-v1 点云格式");
+      }
+      if (!Array.isArray(payload.points) || payload.points.length === 0) {
+        throw new Error("点云 JSON 未包含 points 数据");
+      }
+    }
+
+    function loadPointCloudPayload(payload, meta = {}) {
+      validatePointCloudPayload(payload);
+
+      const stride = Math.max(Number(payload.stride) || 7, 3);
+      const raw = payload.points;
+      const count = Math.floor(raw.length / stride);
+      if (!count) {
+        throw new Error("点云 JSON 不包含可用点数据");
+      }
+
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      let minX = Infinity;
+      let minY = Infinity;
+      let minZ = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      let maxZ = -Infinity;
+      const classSet = new Set();
+
+      for (let i = 0; i < count; i += 1) {
+        const offset = i * stride;
+        const dest = i * 3;
+        const x = Number(raw[offset]) || 0;
+        const y = Number(raw[offset + 1]) || 0;
+        const z = Number(raw[offset + 2]) || 0;
+        const r = clamp(Number(raw[offset + 3] ?? 120), 0, 255) / 255;
+        const g = clamp(Number(raw[offset + 4] ?? 170), 0, 255) / 255;
+        const b = clamp(Number(raw[offset + 5] ?? 220), 0, 255) / 255;
+
+        positions[dest] = x;
+        positions[dest + 1] = y;
+        positions[dest + 2] = z;
+        colors[dest] = r;
+        colors[dest + 1] = g;
+        colors[dest + 2] = b;
+
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        minZ = Math.min(minZ, z);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+        maxZ = Math.max(maxZ, z);
+
+        if (stride > 6 && Number.isFinite(Number(raw[offset + 6]))) {
+          classSet.add(Number(raw[offset + 6]));
+        }
+      }
+
+      clearPointCloud();
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      geometry.computeBoundingSphere();
+
+      const material = new THREE.PointsMaterial({
+        size: 1.15,
+        sizeAttenuation: true,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.96,
+        depthWrite: false
+      });
+
+      pointCloudObject = new THREE.Points(geometry, material);
+      pointCloudObject.position.y = -18;
+      pointCloudObject.frustumCulled = false;
+      scene.add(pointCloudObject);
+      setSceneMode("pointcloud");
+
+      const minBounds = Array.isArray(payload.bounds?.min) ? payload.bounds.min : [minX, minY, minZ];
+      const maxBounds = Array.isArray(payload.bounds?.max) ? payload.bounds.max : [maxX, maxY, maxZ];
+      focusPointCloud(
+        [Number(minBounds[0]), Number(minBounds[1]) - 18, Number(minBounds[2])],
+        [Number(maxBounds[0]), Number(maxBounds[1]) - 18, Number(maxBounds[2])]
+      );
+
+      const attributes = Array.isArray(payload.attributes) && payload.attributes.length
+        ? payload.attributes.join(", ")
+        : "x, y, z";
+      const classText = classSet.size ? ` · ${classSet.size} 类分类` : "";
+
+      updateMeta({
+        name: payload.name || meta.name || "示意点云",
+        source: meta.source || payload.source_file || "浏览器本地文件",
+        dimensions: formatExtent(payload.bounds?.min || [minX, minY, minZ], payload.bounds?.max || [maxX, maxY, maxZ]),
+        pages: `${formatCount(payload.point_count || count)} 点`,
+        channels: `${attributes}${classText}`,
+        bits: meta.renderMode || "JSON 点云 / THREE.Points",
+        size: formatBytes(meta.size || 0)
+      });
+    }
+
+    function parsePointCloudText(text) {
+      const payload = JSON.parse(text);
+      validatePointCloudPayload(payload);
+      return payload;
+    }
+
+    function colorFromHeight(height, pitMask) {
+      if (pitMask > 0.78) return new THREE.Color(0xd9c58f);
+      if (height < -12) return new THREE.Color(0x14919b);
+      if (height < -4) return new THREE.Color(0x2f9e6e);
+      if (height < 6) return new THREE.Color(0x4ade80);
+      if (height < 18) return new THREE.Color(0x35b26b);
+      return new THREE.Color(0x86c471);
+    }
+
+    function computeDemoHeight(x, z) {
+      const nx = x / 110;
+      const nz = z / 90;
+      const pitA = Math.exp(-((nx + 0.18) ** 2 * 18 + (nz - 0.04) ** 2 * 10));
+      const pitB = Math.exp(-((nx - 0.06) ** 2 * 26 + (nz + 0.12) ** 2 * 18));
+      const ridge = Math.sin(nx * 4.4) * 4.4 + Math.cos(nz * 5.1) * 3.8 + Math.sin((nx - nz) * 6.2) * 2.4;
+      let height = 17 + ridge - pitA * 42 - pitB * 24;
+      if (pitA > 0.16 || pitB > 0.12) {
+        height = Math.floor(height / 2.8) * 2.8;
+      }
+      if (nx > 0.16 && nz > -0.24 && nz < 0.14) {
+        height = Math.max(height, 10.5);
+      }
+      return { height, pitMask: clamp(pitA + pitB * 0.8, 0, 1) };
+    }
+
+    function buildTerrainFromHeightField(heightField, paletteFn) {
+      const positions = terrainGeometry.attributes.position;
+      const colors = [];
+
+      for (let i = 0; i < positions.count; i += 1) {
+        const x = positions.getX(i);
+        const z = positions.getZ(i);
+        const data = heightField(x, z);
+        positions.setY(i, data.height);
+        const color = paletteFn(data.height, data.pitMask || 0, x, z);
+        colors.push(color.r, color.g, color.b);
+      }
+
+      terrainGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+      terrainGeometry.computeVertexNormals();
+      positions.needsUpdate = true;
+      terrainGeometry.attributes.color.needsUpdate = true;
+      terrainHeightFn = (x, z) => heightField(x, z).height;
+      clearPointCloud();
+      setSceneMode("terrain");
+      rebuildFacilities();
+    }
+
+    function buildTerrainFromRaster(width, height, values, meta) {
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < values.length; i += 1) {
+        const value = values[i];
+        if (value < min) min = value;
+        if (value > max) max = value;
+      }
+      const range = Math.max(max - min, 1);
+      const sx = width - 1;
+      const sy = height - 1;
+
+      buildTerrainFromHeightField((x, z) => {
+        const u = clamp((x + 110) / 220, 0, 1);
+        const v = clamp((z + 90) / 180, 0, 1);
+        const ix = Math.floor(u * sx);
+        const iy = Math.floor((1 - v) * sy);
+        const value = values[iy * width + ix];
+        const normalized = (value - min) / range;
+        return {
+          height: normalized * 42 - 16,
+          pitMask: Math.max(0, 0.7 - normalized)
+        };
+      }, (elevation, pitMask) => {
+        if (elevation < -10) return new THREE.Color(0x8e6a53);
+        if (elevation < -2) return new THREE.Color(0xa98667);
+        if (elevation < 10) return new THREE.Color(0x5b8255);
+        if (elevation < 22) return new THREE.Color(0x6f9460);
+        return new THREE.Color(pitMask > 0.35 ? 0xc6c2b7 : 0x89a27d);
+      });
+
+      updateMeta({
+        name: meta.name,
+        source: meta.source,
+        dimensions: `${width} × ${height}`,
+        pages: String(meta.pages || 1),
+        channels: String(meta.channels || 1),
+        bits: meta.bits || "-",
+        size: formatBytes(meta.size)
+      });
+    }
+
+    function makeBox(width, height, depth, color) {
+      return new THREE.Mesh(
+        new THREE.BoxGeometry(width, height, depth),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.72, metalness: 0.18 })
+      );
+    }
+
+    function makeCylinder(radiusTop, radiusBottom, height, color) {
+      return new THREE.Mesh(
+        new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 24),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.12 })
+      );
+    }
+
+    function makeConveyor(points) {
+      const curve = new THREE.CatmullRomCurve3(points);
+      const tube = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 42, 1.35, 12, false),
+        new THREE.MeshStandardMaterial({ color: 0x28b5ff, emissive: 0x0d5db4, emissiveIntensity: 0.45, roughness: 0.36, metalness: 0.48 })
+      );
+      const rail = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 42, 0.44, 10, false),
+        new THREE.MeshStandardMaterial({ color: 0xaef3ff, emissive: 0x72ecff, emissiveIntensity: 0.28, roughness: 0.2, metalness: 0.65 })
+      );
+      const group = new THREE.Group();
+      group.add(tube, rail);
+      return group;
+    }
+
+    function sampleTerrain(x, z) {
+      return terrainHeightFn ? terrainHeightFn(x, z) : 0;
+    }
+
+    function rebuildFacilities() {
+      if (facilityGroup) scene.remove(facilityGroup);
+      if (sparkGroup) scene.remove(sparkGroup);
+
+      facilityGroup = new THREE.Group();
+      sparkGroup = new THREE.Group();
+
+      const pad = new THREE.Mesh(
+        new THREE.BoxGeometry(52, 2.2, 34),
+        new THREE.MeshStandardMaterial({ color: 0x2f4b5f, roughness: 0.9, metalness: 0.05 })
+      );
+      pad.position.set(54, sampleTerrain(54, -8) + 1.1, -8);
+      pad.receiveShadow = true;
+      facilityGroup.add(pad);
+
+      const modules = [
+        { x: 40, z: -10, w: 10, h: 6, d: 8 },
+        { x: 52, z: -8, w: 14, h: 7, d: 10 },
+        { x: 67, z: -4, w: 12, h: 10, d: 9 },
+        { x: 76, z: -12, w: 8, h: 8, d: 8 }
+      ];
+
+      modules.forEach((item, index) => {
+        const box = makeBox(item.w, item.h, item.d, index % 2 === 0 ? 0x2d7df4 : 0x1e5fb0);
+        box.position.set(item.x, sampleTerrain(item.x, item.z) + item.h / 2 + 1.2, item.z);
+        box.castShadow = true;
+        box.receiveShadow = true;
+        facilityGroup.add(box);
+      });
+
+      [-24, -10, 6].forEach((z, index) => {
+        const pile = makeCylinder(5.5, 8, 10 + index * 1.4, 0xb6956b);
+        pile.position.set(86 + index * 9, sampleTerrain(86 + index * 9, z) + 5.4, z);
+        pile.castShadow = true;
+        facilityGroup.add(pile);
+      });
+
+      const conveyors = [
+        [[46, -8], [12, -4], [-18, 10]],
+        [[55, -4], [22, 6], [-6, 20]],
+        [[67, -2], [34, 10], [12, 28]]
+      ];
+
+      conveyors.forEach((path, pathIndex) => {
+        const points = path.map(([x, z], idx) => new THREE.Vector3(x, sampleTerrain(x, z) + 7 + idx * 1.2 + pathIndex * 0.3, z));
+        facilityGroup.add(makeConveyor(points));
+      });
+
+      for (let i = 0; i < 28; i += 1) {
+        const spark = new THREE.Mesh(
+          new THREE.SphereGeometry(0.36, 12, 12),
+          new THREE.MeshBasicMaterial({ color: i % 3 === 0 ? 0x72ecff : 0x28b5ff, transparent: true, opacity: 0.82 })
+        );
+        const x = 34 + (i % 7) * 8;
+        const z = -18 + Math.floor(i / 7) * 10;
+        spark.position.set(x, sampleTerrain(x, z) + 9 + (i % 4) * 0.6, z);
+        spark.userData.baseY = spark.position.y;
+        spark.userData.offset = i * 0.6;
+        sparkGroup.add(spark);
+      }
+
+      scene.add(facilityGroup, sparkGroup);
+    }
+
+    function buildScene() {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(mineView.clientWidth, mineView.clientHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      mineView.innerHTML = "";
+      mineView.appendChild(renderer.domElement);
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x06121d, 160, 360);
+
+      camera = new THREE.PerspectiveCamera(42, mineView.clientWidth / mineView.clientHeight, 0.1, 1000);
+      camera.position.set(116, 118, 132);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.45;
+      controls.target.set(0, 8, 0);
+      controls.minDistance = 90;
+      controls.maxDistance = 240;
+      controls.maxPolarAngle = Math.PI / 2.08;
+
+      scene.add(new THREE.AmbientLight(0xa9d8ff, 1.45));
+
+      const sun = new THREE.DirectionalLight(0xffffff, 2.4);
+      sun.position.set(90, 120, 40);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 320;
+      sun.shadow.camera.left = -120;
+      sun.shadow.camera.right = 120;
+      sun.shadow.camera.top = 120;
+      sun.shadow.camera.bottom = -120;
+      scene.add(sun);
+
+      const rim = new THREE.DirectionalLight(0x3fd7ff, 1.1);
+      rim.position.set(-100, 45, -80);
+      scene.add(rim);
+
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(145, 152, 10, 64),
+        new THREE.MeshStandardMaterial({ color: 0x08141f, roughness: 0.96, metalness: 0.05 })
+      );
+      base.position.y = -24;
+      base.receiveShadow = true;
+      scene.add(base);
+
+      const grid = new THREE.GridHelper(240, 24, 0x1ec8ff, 0x11466f);
+      grid.position.y = -18;
+      grid.material.opacity = 0.28;
+      grid.material.transparent = true;
+      scene.add(grid);
+
+      terrainGeometry = new THREE.PlaneGeometry(220, 180, 180, 130);
+      terrainGeometry.rotateX(-Math.PI / 2);
+      terrainMesh = new THREE.Mesh(
+        terrainGeometry,
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.94, metalness: 0.04 })
+      );
+      terrainMesh.castShadow = true;
+      terrainMesh.receiveShadow = true;
+      scene.add(terrainMesh);
+
+      loadDemoScene();
+      window.addEventListener("resize", onResize);
+      animate();
+    }
+
+    function loadDemoScene() {
+      if (datasetSelect) datasetSelect.value = "builtin-demo";
+      resetCamera();
+      buildTerrainFromHeightField(computeDemoHeight, colorFromHeight);
+      updateMeta({
+        name: "内置 3D 示例",
+        source: "程序生成林区场景",
+        dimensions: "220 × 180 场景单元",
+        pages: "实时网格",
+        channels: "顶点高程",
+        bits: "WebGL Mesh",
+        size: "无外部大文件"
+      });
+      setStatus("内置三维林区示例已启动，支持鼠标拖拽旋转查看。", false);
+    }
+
+    async function loadTiffFromBuffer(buffer, meta) {
+      if (!window.UTIF) {
+        throw new Error("UTIF 解析库未成功加载");
+      }
+
+      resetCamera();
+
+      const ifds = window.UTIF.decode(buffer);
+      if (!ifds.length) {
+        throw new Error("未读取到可显示的 TIFF 图层");
+      }
+
+      const page = ifds[0];
+      window.UTIF.decodeImage(buffer, page, ifds);
+      const width = page.width || page.t256;
+      const height = page.height || page.t257;
+      const rgba = window.UTIF.toRGBA8(page);
+      const values = [];
+      for (let i = 0; i < rgba.length; i += 4) {
+        values.push((rgba[i] + rgba[i + 1] + rgba[i + 2]) / 3);
+      }
+
+      buildTerrainFromRaster(width, height, values, {
+        name: meta.name || "local.tif",
+        source: meta.source || "浏览器本地文件",
+        pages: ifds.length,
+        channels: page.t277 || 1,
+        bits: Array.isArray(page.t258) ? page.t258.join(" / ") : (page.t258 || "-"),
+        size: meta.size || buffer.byteLength
+      });
+    }
+
+    async function loadLocalTiff(file) {
+      const buffer = await file.arrayBuffer();
+      await loadTiffFromBuffer(buffer, {
+        name: file.name || "local.tif",
+        source: "浏览器本地文件",
+        size: file.size
+      });
+
+      setStatus(`已将 ${file.name} 转换成可旋转三维地形。`, false);
+    }
+
+    function isTiffFile(file) {
+      if (!file) return false;
+      const name = (file.name || "").toLowerCase();
+      return name.endsWith(".tif") || name.endsWith(".tiff") || file.type === "image/tiff";
+    }
+
+    function isJsonFile(file) {
+      if (!file) return false;
+      const name = (file.name || "").toLowerCase();
+      return name.endsWith(".json") || file.type === "application/json" || file.type === "text/json";
+    }
+
+    function populateDatasetSelect() {
+      const entries = Array.isArray(datasetCatalog.datasets) ? datasetCatalog.datasets : [];
+      datasetSelect.innerHTML = "";
+      entries.forEach((entry) => {
+        const option = document.createElement("option");
+        option.value = entry.id;
+        option.textContent = entry.name;
+        datasetSelect.appendChild(option);
+      });
+
+      if (!entries.length) {
+        const option = document.createElement("option");
+        option.value = "builtin-demo";
+        option.textContent = "内置 3D 林区样区";
+        datasetSelect.appendChild(option);
+      }
+
+      datasetSelect.value = datasetCatalog.default || entries[0]?.id || "builtin-demo";
+    }
+
+    function findDatasetEntry(id) {
+      return (datasetCatalog.datasets || []).find((item) => item.id === id);
+    }
+
+    function getRequestedDatasetId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("dataset");
+    }
+
+    async function loadCatalogDataset(entry) {
+      if (!entry) {
+        throw new Error("未找到选中的示意数据");
+      }
+
+      if (entry.type === "builtin-demo") {
+        loadDemoScene();
+        return;
+      }
+
+      if (entry.type === "pointcloud-json") {
+        const response = await fetch(entry.path, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`无法读取 ${entry.path}`);
+        }
+        const text = await response.text();
+        const payload = parsePointCloudText(text);
+        loadPointCloudPayload(payload, {
+          source: `仓库示意数据 · ${describeDatasetSource(entry.path)}`,
+          size: new Blob([text]).size,
+          renderMode: "仓库点云示意 / THREE.Points"
+        });
+        setStatus(`${entry.name} 已加载，可直接旋转查看。`, false);
+        return;
+      }
+
+      if (entry.type === "terrain-tiff") {
+        const response = await fetch(entry.path, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`无法读取 ${entry.path}`);
+        }
+        const buffer = await response.arrayBuffer();
+        await loadTiffFromBuffer(buffer, {
+          name: entry.name,
+          source: `仓库示意数据 · ${describeDatasetSource(entry.path)}`,
+          size: buffer.byteLength
+        });
+        setStatus(`${entry.name} 已加载为三维地形。`, false);
+        return;
+      }
+
+      throw new Error(`暂不支持的数据类型：${entry.type}`);
+    }
+
+    async function loadCatalog() {
+      const response = await fetch("./assets/data/catalog.json", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("未读取到数据目录 assets/data/catalog.json");
+      }
+      datasetCatalog = await response.json();
+      populateDatasetSelect();
+
+      const preferredId = getRequestedDatasetId() || datasetCatalog.default;
+      if (preferredId && preferredId !== "builtin-demo") {
+        const entry = findDatasetEntry(preferredId);
+        if (entry) {
+          datasetSelect.value = entry.id;
+          await loadCatalogDataset(entry);
+        }
+      }
+    }
+
+    function onResize() {
+      if (!renderer) return;
+      const { clientWidth, clientHeight } = mineView;
+      renderer.setSize(clientWidth, clientHeight);
+      camera.aspect = clientWidth / clientHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    function animate(time = 0) {
+      requestAnimationFrame(animate);
+      controls.update();
+      if (sparkGroup) {
+        sparkGroup.children.forEach((spark, index) => {
+          spark.position.y = spark.userData.baseY + Math.sin(time * 0.0016 + spark.userData.offset) * 0.7;
+          spark.material.opacity = 0.65 + Math.sin(time * 0.002 + index) * 0.2;
+        });
+      }
+      renderer.render(scene, camera);
+    }
+
+    localDataInput.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      try {
+        if (isTiffFile(file)) {
+          await loadLocalTiff(file);
+        } else if (isJsonFile(file)) {
+          const text = await file.text();
+          const payload = parsePointCloudText(text);
+          loadPointCloudPayload(payload, {
+            source: `浏览器本地文件 · ${file.name}`,
+            size: file.size,
+            renderMode: "本地点云示意 / THREE.Points"
+          });
+          setStatus(`已加载本地点云示意 ${file.name}。`, false);
+        } else {
+          throw new Error("请选择 .json、.tif 或 .tiff 文件");
+        }
+      } catch (error) {
+        setStatus(`本地数据加载失败：${error.message}`, true);
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    loadDatasetButton.addEventListener("click", async () => {
+      try {
+        const entry = findDatasetEntry(datasetSelect.value);
+        await loadCatalogDataset(entry);
+      } catch (error) {
+        setStatus(`示意数据加载失败：${error.message}`, true);
+      }
+    });
+
+    reloadDefaultButton.addEventListener("click", () => {
+      loadDemoScene();
+    });
+
+    updateClock();
+    setInterval(updateClock, 1000);
+    buildScene();
+    loadCatalog().catch((error) => {
+      setStatus(`首页示例已启动，但数据目录读取失败：${error.message}`, true);
+    });
+  
+/* ================== enhance layer (auto-injected) ================== */
+window.__VIZ_THEME__ = {"accent": "#4fd4ff", "greet": "林区三维平台 · 交互增强已加载（全部按钮可用）", "shotName": "mine-snapshot", "line": "rgba(74,222,128,.28)", "muted": "#8fa8bf", "text": "#dff2ff"};
+/* ================= 智能交互增强层 (geoviz enhance) =================
+   注入于应用 module 末尾，可直接访问 scene/camera/controls/pointCloudObject。
+   功能：Toast 反馈、按钮涟漪、视角预设、点云着色、点大小、自动环视、
+        截图导出、面板数据活脉动。
+==================================================================== */
+(() => {
+  const THEME = window.__VIZ_THEME__ || { accent: "#4fd4ff", greet: "交互增强已加载" };
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+  /* ---------- Toast 通知 ---------- */
+  const toastBox = document.createElement("div");
+  toastBox.className = "gvz-toasts";
+  document.body.appendChild(toastBox);
+  function toast(msg, kind = "info") {
+    const t = document.createElement("div");
+    t.className = "gvz-toast gvz-" + kind;
+    t.textContent = msg;
+    toastBox.appendChild(t);
+    requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 450); }, 2600);
+  }
+  window.gvzToast = toast;
+
+  /* ---------- 按压涟漪（所有可点元素） ---------- */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("button, .hero-chip, .ghost-button, .control-pill, .scene-tag, .gvz-dock .gvz-btn");
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const span = document.createElement("span");
+    span.className = "gvz-ripple";
+    const size = Math.max(r.width, r.height) * 2;
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (e.clientX - r.left - size / 2) + "px";
+    span.style.top = (e.clientY - r.top - size / 2) + "px";
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    el.style.overflow = "hidden";
+    el.appendChild(span);
+    setTimeout(() => span.remove(), 680);
+  }, true);
+
+  /* ---------- 点云着色模式 ---------- */
+  let colorMode = "original";
+  const STOPS = [new THREE.Color(0x22384f), new THREE.Color(0x14919b),
+                 new THREE.Color(0xe7d8b1), new THREE.Color(0xe76f51)];
+  function applyColorMode() {
+    if (!pointCloudObject) return;
+    const pos = pointCloudObject.geometry.getAttribute("position");
+    const col = pointCloudObject.geometry.getAttribute("color");
+    if (!pos || !col) return;
+    if (colorMode === "original") {
+      const orig = pointCloudObject.userData.originalColors;
+      if (orig) { col.array.set(orig.array); col.needsUpdate = true; }
+      return;
+    }
+    if (colorMode === "mono") {
+      const c = new THREE.Color(THEME.accent);
+      for (let i = 0; i < col.count; i++) col.setXYZ(i, c.r, c.g, c.b);
+      col.needsUpdate = true;
+      return;
+    }
+    const axis = colorMode === "elevation" ? 1 : 0;
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const v = pos.array[i * 3 + axis];
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    const span = (mx - mn) || 1;
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      let t = (pos.array[i * 3 + axis] - mn) / span;
+      t = Math.min(0.9999, Math.max(0, t)) * (STOPS.length - 1);
+      const i0 = Math.floor(t), f = t - i0;
+      c.copy(STOPS[i0]).lerp(STOPS[i0 + 1], f);
+      col.setXYZ(i, c.r, c.g, c.b);
+    }
+    col.needsUpdate = true;
+  }
+  /* 包一层加载器：每次载入后快照原始颜色并套用当前着色 */
+  const __origLoad = loadPointCloudPayload;
+  loadPointCloudPayload = function (payload, meta) {
+    __origLoad(payload, meta);
+    if (pointCloudObject) {
+      const col = pointCloudObject.geometry.getAttribute("color");
+      if (col) pointCloudObject.userData.originalColors = col.clone();
+      applyColorMode();
+    }
+  };
+
+  /* ---------- 控制坞 ---------- */
+  const dock = document.createElement("div");
+  dock.className = "gvz-dock";
+  dock.innerHTML = `
+    <div class="gvz-dock-row gvz-views">
+      <span class="gvz-dock-label">视角</span>
+      <button class="gvz-btn" data-view="top">俯视</button>
+      <button class="gvz-btn" data-view="front">前视</button>
+      <button class="gvz-btn" data-view="iso">等轴</button>
+      <button class="gvz-btn" data-view="reset">复位</button>
+    </div>
+    <div class="gvz-dock-row">
+      <span class="gvz-dock-label">着色</span>
+      <button class="gvz-btn active" data-color="original">原始</button>
+      <button class="gvz-btn" data-color="elevation">高程</button>
+      <button class="gvz-btn" data-color="mono">单色</button>
+      <span class="gvz-dock-sep"></span>
+      <span class="gvz-dock-label">点径</span>
+      <input id="gvz-size" type="range" min="0.3" max="3" step="0.05" value="1.15">
+      <span id="gvz-size-val" class="gvz-val">1.15</span>
+    </div>
+    <div class="gvz-dock-row">
+      <button class="gvz-btn" id="gvz-rotate">▶ 自动环视</button>
+      <button class="gvz-btn" id="gvz-shot">⎙ 截图</button>
+      <button class="gvz-btn" id="gvz-fit">⤢ 聚焦点云</button>
+    </div>`;
+  const mount = document.getElementById("mine-view") || document.body;
+  mount.appendChild(dock);
+
+  /* 视角预设 */
+  dock.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+    if (!camera || !controls) return;
+    const mode = b.dataset.view;
+    if (mode === "reset") { resetCamera(); toast("视角已复位", "ok"); return; }
+    const t = controls.target.clone();
+    const dist = Math.max(camera.position.distanceTo(t), 60);
+    const map = {
+      top:   [0.01, dist, 0.01],
+      front: [0, dist * 0.18, dist],
+      iso:   [dist * 0.66, dist * 0.55, dist * 0.66],
+    };
+    const [dx, dy, dz] = map[mode];
+    camera.position.set(t.x + dx, t.y + dy, t.z + dz);
+    controls.update();
+    toast("视角已切换 → " + b.textContent.trim());
+  }));
+
+  /* 着色模式 */
+  dock.querySelectorAll("[data-color]").forEach(b => b.addEventListener("click", () => {
+    colorMode = b.dataset.color;
+    dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x === b));
+    applyColorMode();
+    toast("着色模式 → " + b.textContent.trim());
+  }));
+
+  /* 点大小 */
+  const sizeInput = dock.querySelector("#gvz-size");
+  sizeInput.addEventListener("input", () => {
+    if (pointCloudObject && pointCloudObject.material)
+      pointCloudObject.material.size = parseFloat(sizeInput.value);
+    dock.querySelector("#gvz-size-val").textContent = sizeInput.value;
+  });
+
+  /* 自动环视 */
+  dock.querySelector("#gvz-rotate").addEventListener("click", (e) => {
+    controls.autoRotate = !controls.autoRotate;
+    e.currentTarget.classList.toggle("active", controls.autoRotate);
+    e.currentTarget.textContent = controls.autoRotate ? "❚❚ 环视中" : "▶ 自动环视";
+    toast(controls.autoRotate ? "自动环视已开启" : "自动环视已暂停");
+  });
+
+  /* 截图导出 */
+  dock.querySelector("#gvz-shot").addEventListener("click", () => {
+    try {
+      renderer.render(scene, camera);
+      const url = renderer.domElement.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (THEME.shotName || "snapshot") + "-" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "") + ".png";
+      a.click();
+      toast("快照已保存到下载目录", "ok");
+    } catch (err) { toast("快照失败：" + err.message, "err"); }
+  });
+
+  /* 聚焦点云 */
+  dock.querySelector("#gvz-fit").addEventListener("click", () => {
+    if (!pointCloudObject) { toast("当前无点云，请先加载数据", "err"); return; }
+    pointCloudObject.geometry.computeBoundingBox();
+    const bb = pointCloudObject.geometry.boundingBox;
+    focusPointCloud([bb.min.x, bb.min.y - 18, bb.min.z], [bb.max.x, bb.max.y - 18, bb.max.z]);
+    toast("已聚焦点云范围", "ok");
+  });
+
+  /* ---------- 信息芯片反馈 ---------- */
+  $$(".hero-chip").forEach(ch => ch.addEventListener("click", () => {
+    toast("信息 · " + ch.textContent.trim().replace(/\s+/g, " "));
+  }));
+
+  /* ---------- 面板数据活脉动 ---------- */
+  setInterval(() => {
+    $$(".bar").forEach(b => {
+      if (b.dataset.gvzBase === undefined) b.dataset.gvzBase = parseFloat(b.style.width) || 50;
+      const base = parseFloat(b.dataset.gvzBase);
+      const next = Math.min(98, Math.max(6, base + (Math.random() - 0.5) * 5));
+      b.style.width = next.toFixed(1) + "%";
+    });
+    $$(".gvz-live-dot").forEach(d => d.classList.toggle("on"));
+  }, 3200);
+
+  /* ---------- 状态条呼吸点 ---------- */
+  $$(".status-tag, .status-chip").forEach(chip => {
+    const dot = document.createElement("span");
+    dot.className = "gvz-live-dot on";
+    chip.prepend(dot);
+  });
+
+  toast(THEME.greet, "ok");
+})();
+
+/* ================== end enhance layer ================== */
+
+/* ================== enhance layer (auto-injected) ================== */
+window.__VIZ_THEME__ = {"accent": "#4fd4ff", "greet": "林区三维平台 · 交互增强已加载（全部按钮可用）", "shotName": "mine-snapshot", "line": "rgba(74,222,128,.28)", "muted": "#8fa8bf", "text": "#dff2ff", "mapCenter": [117.42, 29.1], "mapZoom": 13};
+/* ================= 智能交互增强层 (geoviz enhance) =================
+   注入于应用 module 末尾，可直接访问 scene/camera/controls/pointCloudObject。
+   功能：Toast 反馈、按钮涟漪、视角预设、点云着色、点大小、自动环视、
+        截图导出、面板数据活脉动。
+==================================================================== */
+(() => {
+  const THEME = window.__VIZ_THEME__ || { accent: "#4fd4ff", greet: "交互增强已加载" };
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+  /* ---------- Toast 通知 ---------- */
+  const toastBox = document.createElement("div");
+  toastBox.className = "gvz-toasts";
+  document.body.appendChild(toastBox);
+  function toast(msg, kind = "info") {
+    const t = document.createElement("div");
+    t.className = "gvz-toast gvz-" + kind;
+    t.textContent = msg;
+    toastBox.appendChild(t);
+    requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 450); }, 2600);
+  }
+  window.gvzToast = toast;
+
+  /* ---------- 按压涟漪（所有可点元素） ---------- */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("button, .hero-chip, .ghost-button, .control-pill, .scene-tag, .gvz-dock .gvz-btn");
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const span = document.createElement("span");
+    span.className = "gvz-ripple";
+    const size = Math.max(r.width, r.height) * 2;
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (e.clientX - r.left - size / 2) + "px";
+    span.style.top = (e.clientY - r.top - size / 2) + "px";
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    el.style.overflow = "hidden";
+    el.appendChild(span);
+    setTimeout(() => span.remove(), 680);
+  }, true);
+
+  /* ---------- 点云着色模式 ---------- */
+  let colorMode = "original";
+  const STOPS = [new THREE.Color(0x22384f), new THREE.Color(0x14919b),
+                 new THREE.Color(0xe7d8b1), new THREE.Color(0xe76f51)];
+  function applyColorMode() {
+    if (!pointCloudObject) return;
+    const pos = pointCloudObject.geometry.getAttribute("position");
+    const col = pointCloudObject.geometry.getAttribute("color");
+    if (!pos || !col) return;
+    if (colorMode === "original") {
+      const orig = pointCloudObject.userData.originalColors;
+      if (orig) { col.array.set(orig.array); col.needsUpdate = true; }
+      return;
+    }
+    if (colorMode === "mono") {
+      const c = new THREE.Color(THEME.accent);
+      for (let i = 0; i < col.count; i++) col.setXYZ(i, c.r, c.g, c.b);
+      col.needsUpdate = true;
+      return;
+    }
+    const axis = colorMode === "elevation" ? 1 : 0;
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const v = pos.array[i * 3 + axis];
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    const span = (mx - mn) || 1;
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      let t = (pos.array[i * 3 + axis] - mn) / span;
+      t = Math.min(0.9999, Math.max(0, t)) * (STOPS.length - 1);
+      const i0 = Math.floor(t), f = t - i0;
+      c.copy(STOPS[i0]).lerp(STOPS[i0 + 1], f);
+      col.setXYZ(i, c.r, c.g, c.b);
+    }
+    col.needsUpdate = true;
+  }
+  /* 包一层加载器：每次载入后快照原始颜色并套用当前着色 */
+  const __origLoad = loadPointCloudPayload;
+  loadPointCloudPayload = function (payload, meta) {
+    __origLoad(payload, meta);
+    if (pointCloudObject) {
+      const col = pointCloudObject.geometry.getAttribute("color");
+      if (col) pointCloudObject.userData.originalColors = col.clone();
+      applyColorMode();
+    }
+  };
+
+  /* ---------- 控制坞 ---------- */
+  const dock = document.createElement("div");
+  dock.className = "gvz-dock";
+  dock.innerHTML = `
+    <div class="gvz-dock-row gvz-views">
+      <span class="gvz-dock-label">视角</span>
+      <button class="gvz-btn" data-view="top">俯视</button>
+      <button class="gvz-btn" data-view="front">前视</button>
+      <button class="gvz-btn" data-view="iso">等轴</button>
+      <button class="gvz-btn" data-view="reset">复位</button>
+    </div>
+    <div class="gvz-dock-row">
+      <span class="gvz-dock-label">着色</span>
+      <button class="gvz-btn active" data-color="original">原始</button>
+      <button class="gvz-btn" data-color="elevation">高程</button>
+      <button class="gvz-btn" data-color="mono">单色</button>
+      <span class="gvz-dock-sep"></span>
+      <span class="gvz-dock-label">点径</span>
+      <input id="gvz-size" type="range" min="0.3" max="3" step="0.05" value="1.15">
+      <span id="gvz-size-val" class="gvz-val">1.15</span>
+    </div>
+    <div class="gvz-dock-row">
+      <span class="gvz-dock-label">底图</span>
+      <button class="gvz-btn" data-basemap="osm">OSM</button>
+      <button class="gvz-btn" data-basemap="amap">高德</button>
+      <button class="gvz-btn" data-basemap="amapsat">卫星</button>
+      <button class="gvz-btn active" data-basemap="none">关闭</button>
+    </div>
+    <div class="gvz-dock-row">
+      <button class="gvz-btn" id="gvz-rotate">▶ 自动环视</button>
+      <button class="gvz-btn" id="gvz-shot">⎙ 截图</button>
+      <button class="gvz-btn" id="gvz-fit">⤢ 聚焦点云</button>
+    </div>`;
+  const mount = document.getElementById("mine-view") || document.body;
+  mount.appendChild(dock);
+
+  /* 视角预设 */
+  dock.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+    if (!camera || !controls) return;
+    const mode = b.dataset.view;
+    if (mode === "reset") { resetCamera(); toast("视角已复位", "ok"); return; }
+    const t = controls.target.clone();
+    const dist = Math.max(camera.position.distanceTo(t), 60);
+    const map = {
+      top:   [0.01, dist, 0.01],
+      front: [0, dist * 0.18, dist],
+      iso:   [dist * 0.66, dist * 0.55, dist * 0.66],
+    };
+    const [dx, dy, dz] = map[mode];
+    camera.position.set(t.x + dx, t.y + dy, t.z + dz);
+    controls.update();
+    toast("视角已切换 → " + b.textContent.trim());
+  }));
+
+  /* 着色模式 */
+  dock.querySelectorAll("[data-color]").forEach(b => b.addEventListener("click", () => {
+    colorMode = b.dataset.color;
+    dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x === b));
+    applyColorMode();
+    toast("着色模式 → " + b.textContent.trim());
+  }));
+
+  /* 点大小 */
+  const sizeInput = dock.querySelector("#gvz-size");
+  sizeInput.addEventListener("input", () => {
+    if (pointCloudObject && pointCloudObject.material)
+      pointCloudObject.material.size = parseFloat(sizeInput.value);
+    dock.querySelector("#gvz-size-val").textContent = sizeInput.value;
+  });
+
+  /* 自动环视 */
+  dock.querySelector("#gvz-rotate").addEventListener("click", (e) => {
+    controls.autoRotate = !controls.autoRotate;
+    e.currentTarget.classList.toggle("active", controls.autoRotate);
+    e.currentTarget.textContent = controls.autoRotate ? "❚❚ 环视中" : "▶ 自动环视";
+    toast(controls.autoRotate ? "自动环视已开启" : "自动环视已暂停");
+  });
+
+  /* 截图导出 */
+  dock.querySelector("#gvz-shot").addEventListener("click", () => {
+    try {
+      renderer.render(scene, camera);
+      const url = renderer.domElement.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (THEME.shotName || "snapshot") + "-" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "") + ".png";
+      a.click();
+      toast("快照已保存到下载目录", "ok");
+    } catch (err) { toast("快照失败：" + err.message, "err"); }
+  });
+
+  /* 聚焦点云 */
+  dock.querySelector("#gvz-fit").addEventListener("click", () => {
+    if (!pointCloudObject) { toast("当前无点云，请先加载数据", "err"); return; }
+    pointCloudObject.geometry.computeBoundingBox();
+    const bb = pointCloudObject.geometry.boundingBox;
+    focusPointCloud([bb.min.x, bb.min.y - 18, bb.min.z], [bb.max.x, bb.max.y - 18, bb.max.z]);
+    toast("已聚焦点云范围", "ok");
+  });
+
+  /* ---------- 信息芯片反馈 ---------- */
+  $$(".hero-chip").forEach(ch => ch.addEventListener("click", () => {
+    toast("信息 · " + ch.textContent.trim().replace(/\s+/g, " "));
+  }));
+
+  /* ---------- 侧栏 control-pill 接线（总览/综合集控/安全生产/样地分析/智能巡检） ---------- */
+  const PILL_ACTIONS = {
+    "总览": () => { resetCamera(); toast("总览模式 · 相机已复位", "ok"); },
+    "综合集控": () => {
+      const el = document.querySelector('[data-color="elevation"]');
+      if (el) { colorMode = "elevation"; applyColorMode();
+        dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x.dataset.color === "elevation")); }
+      toast("综合集控 · 高程着色已启用", "ok");
+    },
+    "安全生产": () => {
+      if (controls) { controls.autoRotate = true; }
+      const rb = document.getElementById("gvz-rotate");
+      if (rb) { rb.classList.add("active"); rb.textContent = "❚❚ 环视中"; }
+      toast("安全生产模式 · 自动环视巡查中", "ok");
+    },
+    "样地分析": () => {
+      const el = document.querySelector('[data-color="original"]');
+      if (el) { colorMode = "original"; applyColorMode();
+        dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x.dataset.color === "original")); }
+      toast("样地分析 · 原始影像着色", "ok");
+    },
+    "智能巡检": () => {
+      if (pointCloudObject) {
+        pointCloudObject.geometry.computeBoundingBox();
+        const bb = pointCloudObject.geometry.boundingBox;
+        focusPointCloud([bb.min.x, bb.min.y - 18, bb.min.z], [bb.max.x, bb.max.y - 18, bb.max.z]);
+        toast("智能巡检 · 已聚焦样区", "ok");
+      } else toast("当前无点云数据", "err");
+    },
+  };
+  $$(".control-pill").forEach(pill => pill.addEventListener("click", () => {
+    const name = pill.textContent.trim();
+    const fn = PILL_ACTIONS[name];
+    if (fn) { fn(); $$(".control-pill").forEach(x => x.classList.remove("active")); pill.classList.add("active"); }
+    else toast("模块 · " + name);
+  }));
+
+  /* ---------- 真实地图底图（OSM / 高德 / 卫星） ---------- */
+  let baseMapMesh = null;
+  const PROVIDERS = {
+    osm: { name: "OSM 标准", url: (x, y, z) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, credit: "© OpenStreetMap contributors" },
+    amap: { name: "高德路网", url: (x, y, z) => `https://webrd0${1 + ((x + y) % 4)}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x=${x}&y=${y}&z=${z}`, credit: "© 高德地图 AutoNavi" },
+    amapsat: { name: "高德影像", url: (x, y, z) => `https://webst0${1 + ((x + y) % 4)}.is.autonavi.com/appmaptile?style=6&x=${x}&y=${y}&z=${z}`, credit: "© 高德地图 影像" },
+  };
+  function lngLatToTile(lon, lat, z) {
+    const n = Math.pow(2, z);
+    const xt = Math.floor((lon + 180) / 360 * n);
+    const rad = lat * Math.PI / 180;
+    const yt = Math.floor((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * n);
+    return [xt, yt];
+  }
+  function removeBaseMap() {
+    if (baseMapMesh) {
+      scene.remove(baseMapMesh);
+      baseMapMesh.geometry.dispose();
+      baseMapMesh.material.map?.dispose();
+      baseMapMesh.material.dispose();
+      baseMapMesh = null;
+    }
+  }
+  function loadBaseMap(kind) {
+    removeBaseMap();
+    if (kind === "none") { toast("底图已关闭"); return; }
+    const prov = PROVIDERS[kind];
+    if (!prov) return;
+    const [lon, lat] = THEME.mapCenter || [121.62, 29.75];
+    const z = THEME.mapZoom || 13;
+    const [xt, yt] = lngLatToTile(lon, lat, z);
+    const T = 3, S = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = T * S;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#0a1a12"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let ok = 0;
+    const jobs = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const x = xt + dx, y = yt + dy;
+        jobs.push(new Promise(res => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => { ctx.drawImage(img, (dx + 1) * S, (dy + 1) * S); ok++; res(); };
+          img.onerror = () => res();
+          img.src = prov.url(x, y, z);
+        }));
+      }
+    }
+    Promise.all(jobs).then(() => {
+      if (!ok) { toast(prov.name + " 瓦片加载失败（网络限制）", "err"); return; }
+      const tex = new THREE.CanvasTexture(canvas);
+      const geo = new THREE.PlaneGeometry(232, 190);
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.94 });
+      baseMapMesh = new THREE.Mesh(geo, mat);
+      baseMapMesh.rotation.x = -Math.PI / 2;
+      baseMapMesh.position.y = -19.2;
+      scene.add(baseMapMesh);
+      // 归属标注
+      let credit = document.getElementById("gvz-credit");
+      if (!credit) {
+        credit = document.createElement("div");
+        credit.id = "gvz-credit";
+        const mv = document.getElementById("mine-view") || document.body;
+        mv.appendChild(credit);
+      }
+      credit.textContent = prov.credit;
+      toast("底图已加载 → " + prov.name + `（${ok}/9 瓦片）`, "ok");
+    });
+  }
+  dock.querySelectorAll("[data-basemap]").forEach(b => b.addEventListener("click", () => {
+    dock.querySelectorAll("[data-basemap]").forEach(x => x.classList.toggle("active", x === b));
+    loadBaseMap(b.dataset.basemap);
+  }));
+
+  /* ---------- 面板数据活脉动 ---------- */
+  setInterval(() => {
+    $$(".bar").forEach(b => {
+      if (b.dataset.gvzBase === undefined) b.dataset.gvzBase = parseFloat(b.style.width) || 50;
+      const base = parseFloat(b.dataset.gvzBase);
+      const next = Math.min(98, Math.max(6, base + (Math.random() - 0.5) * 5));
+      b.style.width = next.toFixed(1) + "%";
+    });
+    $$(".gvz-live-dot").forEach(d => d.classList.toggle("on"));
+  }, 3200);
+
+  /* ---------- 状态条呼吸点 ---------- */
+  $$(".status-tag, .status-chip").forEach(chip => {
+    const dot = document.createElement("span");
+    dot.className = "gvz-live-dot on";
+    chip.prepend(dot);
+  });
+
+  toast(THEME.greet, "ok");
+})();
+
+/* ================== end enhance layer ================== */
+
+/* ================== enhance layer (auto-injected) ================== */
+window.__VIZ_THEME__ = {"accent": "#4ade80", "greet": "林业三维平台 · 交互增强已加载（全部按钮可用）", "shotName": "forest-snapshot", "line": "rgba(74,222,128,.32)", "muted": "#8fbc9f", "text": "#eafcf1", "mapCenter": [121.62, 29.75], "mapZoom": 13, "hideFacilities": true};
+/* ================= 智能交互增强层 (geoviz enhance) =================
+   注入于应用 module 末尾，可直接访问 scene/camera/controls/pointCloudObject。
+   功能：Toast 反馈、按钮涟漪、视角预设、点云着色、点大小、自动环视、
+        截图导出、面板数据活脉动。
+==================================================================== */
+(() => {
+  const THEME = window.__VIZ_THEME__ || { accent: "#4fd4ff", greet: "交互增强已加载" };
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+  /* ---------- Toast 通知 ---------- */
+  const toastBox = document.createElement("div");
+  toastBox.className = "gvz-toasts";
+  document.body.appendChild(toastBox);
+  function toast(msg, kind = "info") {
+    const t = document.createElement("div");
+    t.className = "gvz-toast gvz-" + kind;
+    t.textContent = msg;
+    toastBox.appendChild(t);
+    requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 450); }, 2600);
+  }
+  window.gvzToast = toast;
+
+  /* ---------- 按压涟漪（所有可点元素） ---------- */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("button, .hero-chip, .ghost-button, .control-pill, .scene-tag, .gvz-dock .gvz-btn");
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const span = document.createElement("span");
+    span.className = "gvz-ripple";
+    const size = Math.max(r.width, r.height) * 2;
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (e.clientX - r.left - size / 2) + "px";
+    span.style.top = (e.clientY - r.top - size / 2) + "px";
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    el.style.overflow = "hidden";
+    el.appendChild(span);
+    setTimeout(() => span.remove(), 680);
+  }, true);
+
+  /* ---------- 点云着色模式 ---------- */
+  let colorMode = "original";
+  const STOPS = [new THREE.Color(0x22384f), new THREE.Color(0x14919b),
+                 new THREE.Color(0xe7d8b1), new THREE.Color(0xe76f51)];
+  function applyColorMode() {
+    if (!pointCloudObject) return;
+    const pos = pointCloudObject.geometry.getAttribute("position");
+    const col = pointCloudObject.geometry.getAttribute("color");
+    if (!pos || !col) return;
+    if (colorMode === "original") {
+      const orig = pointCloudObject.userData.originalColors;
+      if (orig) { col.array.set(orig.array); col.needsUpdate = true; }
+      return;
+    }
+    if (colorMode === "mono") {
+      const c = new THREE.Color(THEME.accent);
+      for (let i = 0; i < col.count; i++) col.setXYZ(i, c.r, c.g, c.b);
+      col.needsUpdate = true;
+      return;
+    }
+    const axis = colorMode === "elevation" ? 1 : 0;
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const v = pos.array[i * 3 + axis];
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    const span = (mx - mn) || 1;
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      let t = (pos.array[i * 3 + axis] - mn) / span;
+      t = Math.min(0.9999, Math.max(0, t)) * (STOPS.length - 1);
+      const i0 = Math.floor(t), f = t - i0;
+      c.copy(STOPS[i0]).lerp(STOPS[i0 + 1], f);
+      col.setXYZ(i, c.r, c.g, c.b);
+    }
+    col.needsUpdate = true;
+  }
+  /* 包一层加载器：每次载入后快照原始颜色并套用当前着色 */
+  const __origLoad = loadPointCloudPayload;
+  loadPointCloudPayload = function (payload, meta) {
+    __origLoad(payload, meta);
+    if (pointCloudObject) {
+      const col = pointCloudObject.geometry.getAttribute("color");
+      if (col) pointCloudObject.userData.originalColors = col.clone();
+      applyColorMode();
+    }
+  };
+
+  /* ---------- 控制坞 ---------- */
+  const dock = document.createElement("div");
+  dock.className = "gvz-dock";
+  dock.innerHTML = `
+    <div class="gvz-dock-row gvz-views">
+      <span class="gvz-dock-label">视角</span>
+      <button class="gvz-btn" data-view="top">俯视</button>
+      <button class="gvz-btn" data-view="front">前视</button>
+      <button class="gvz-btn" data-view="iso">等轴</button>
+      <button class="gvz-btn" data-view="reset">复位</button>
+    </div>
+    <div class="gvz-dock-row">
+      <span class="gvz-dock-label">着色</span>
+      <button class="gvz-btn active" data-color="original">原始</button>
+      <button class="gvz-btn" data-color="elevation">高程</button>
+      <button class="gvz-btn" data-color="mono">单色</button>
+      <span class="gvz-dock-sep"></span>
+      <span class="gvz-dock-label">点径</span>
+      <input id="gvz-size" type="range" min="0.3" max="3" step="0.05" value="1.15">
+      <span id="gvz-size-val" class="gvz-val">1.15</span>
+    </div>
+    <div class="gvz-dock-row">
+      <span class="gvz-dock-label">底图</span>
+      <button class="gvz-btn" data-basemap="osm">OSM</button>
+      <button class="gvz-btn" data-basemap="amap">高德</button>
+      <button class="gvz-btn" data-basemap="amapsat">卫星</button>
+      <button class="gvz-btn active" data-basemap="none">关闭</button>
+    </div>
+    <div class="gvz-dock-row">
+      <button class="gvz-btn" id="gvz-rotate">▶ 自动环视</button>
+      <button class="gvz-btn" id="gvz-shot">⎙ 截图</button>
+      <button class="gvz-btn" id="gvz-fit">⤢ 聚焦点云</button>
+    </div>`;
+  const mount = document.getElementById("mine-view") || document.body;
+  mount.appendChild(dock);
+
+  /* 视角预设 */
+  dock.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+    if (!camera || !controls) return;
+    const mode = b.dataset.view;
+    if (mode === "reset") { resetCamera(); toast("视角已复位", "ok"); return; }
+    const t = controls.target.clone();
+    const dist = Math.max(camera.position.distanceTo(t), 60);
+    const map = {
+      top:   [0.01, dist, 0.01],
+      front: [0, dist * 0.18, dist],
+      iso:   [dist * 0.66, dist * 0.55, dist * 0.66],
+    };
+    const [dx, dy, dz] = map[mode];
+    camera.position.set(t.x + dx, t.y + dy, t.z + dz);
+    controls.update();
+    toast("视角已切换 → " + b.textContent.trim());
+  }));
+
+  /* 着色模式 */
+  dock.querySelectorAll("[data-color]").forEach(b => b.addEventListener("click", () => {
+    colorMode = b.dataset.color;
+    dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x === b));
+    applyColorMode();
+    toast("着色模式 → " + b.textContent.trim());
+  }));
+
+  /* 点大小 */
+  const sizeInput = dock.querySelector("#gvz-size");
+  sizeInput.addEventListener("input", () => {
+    if (pointCloudObject && pointCloudObject.material)
+      pointCloudObject.material.size = parseFloat(sizeInput.value);
+    dock.querySelector("#gvz-size-val").textContent = sizeInput.value;
+  });
+
+  /* 自动环视 */
+  dock.querySelector("#gvz-rotate").addEventListener("click", (e) => {
+    controls.autoRotate = !controls.autoRotate;
+    e.currentTarget.classList.toggle("active", controls.autoRotate);
+    e.currentTarget.textContent = controls.autoRotate ? "❚❚ 环视中" : "▶ 自动环视";
+    toast(controls.autoRotate ? "自动环视已开启" : "自动环视已暂停");
+  });
+
+  /* 截图导出 */
+  dock.querySelector("#gvz-shot").addEventListener("click", () => {
+    try {
+      renderer.render(scene, camera);
+      const url = renderer.domElement.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (THEME.shotName || "snapshot") + "-" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "") + ".png";
+      a.click();
+      toast("快照已保存到下载目录", "ok");
+    } catch (err) { toast("快照失败：" + err.message, "err"); }
+  });
+
+  /* 聚焦点云 */
+  dock.querySelector("#gvz-fit").addEventListener("click", () => {
+    if (!pointCloudObject) { toast("当前无点云，请先加载数据", "err"); return; }
+    pointCloudObject.geometry.computeBoundingBox();
+    const bb = pointCloudObject.geometry.boundingBox;
+    focusPointCloud([bb.min.x, bb.min.y - 18, bb.min.z], [bb.max.x, bb.max.y - 18, bb.max.z]);
+    toast("已聚焦点云范围", "ok");
+  });
+
+  /* ---------- 信息芯片反馈 ---------- */
+  $$(".hero-chip").forEach(ch => ch.addEventListener("click", () => {
+    toast("信息 · " + ch.textContent.trim().replace(/\s+/g, " "));
+  }));
+
+  /* ---------- 侧栏 control-pill 接线（总览/综合集控/安全生产/样地分析/智能巡检） ---------- */
+  const PILL_ACTIONS = {
+    "总览": () => { resetCamera(); toast("总览模式 · 相机已复位", "ok"); },
+    "综合集控": () => {
+      const el = document.querySelector('[data-color="elevation"]');
+      if (el) { colorMode = "elevation"; applyColorMode();
+        dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x.dataset.color === "elevation")); }
+      toast("综合集控 · 高程着色已启用", "ok");
+    },
+    "安全生产": () => {
+      if (controls) { controls.autoRotate = true; }
+      const rb = document.getElementById("gvz-rotate");
+      if (rb) { rb.classList.add("active"); rb.textContent = "❚❚ 环视中"; }
+      toast("安全生产模式 · 自动环视巡查中", "ok");
+    },
+    "样地分析": () => {
+      const el = document.querySelector('[data-color="original"]');
+      if (el) { colorMode = "original"; applyColorMode();
+        dock.querySelectorAll("[data-color]").forEach(x => x.classList.toggle("active", x.dataset.color === "original")); }
+      toast("样地分析 · 原始影像着色", "ok");
+    },
+    "智能巡检": () => {
+      if (pointCloudObject) {
+        pointCloudObject.geometry.computeBoundingBox();
+        const bb = pointCloudObject.geometry.boundingBox;
+        focusPointCloud([bb.min.x, bb.min.y - 18, bb.min.z], [bb.max.x, bb.max.y - 18, bb.max.z]);
+        toast("智能巡检 · 已聚焦样区", "ok");
+      } else toast("当前无点云数据", "err");
+    },
+  };
+  $$(".control-pill").forEach(pill => pill.addEventListener("click", () => {
+    const name = pill.textContent.trim();
+    const fn = PILL_ACTIONS[name];
+    if (fn) { fn(); $$(".control-pill").forEach(x => x.classList.remove("active")); pill.classList.add("active"); }
+    else toast("模块 · " + name);
+  }));
+
+  /* ---------- 移除示意火花动画 + 按主题控制设施模型 ---------- */
+  function applySceneStyle() {
+    if (sparkGroup) sparkGroup.visible = false;                 // 火花示意动画：移除
+    if (THEME.hideFacilities && facilityGroup) facilityGroup.visible = false;
+  }
+  applySceneStyle();
+  const __origRebuild = rebuildFacilities;
+  rebuildFacilities = function () {
+    __origRebuild();
+    applySceneStyle();
+  };
+  const __origSetSceneMode = setSceneMode;
+  setSceneMode = function (mode) {
+    __origSetSceneMode(mode);
+    applySceneStyle();
+  };
+
+  /* ---------- 真实地图底图（OSM / 高德 / 卫星） ---------- */
+  let baseMapMesh = null;
+  const PROVIDERS = {
+    osm: { name: "OSM 标准", url: (x, y, z) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, credit: "© OpenStreetMap contributors" },
+    amap: { name: "高德路网", url: (x, y, z) => `https://webrd0${1 + ((x + y) % 4)}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x=${x}&y=${y}&z=${z}`, credit: "© 高德地图 AutoNavi" },
+    amapsat: { name: "高德影像", url: (x, y, z) => `https://webst0${1 + ((x + y) % 4)}.is.autonavi.com/appmaptile?style=6&x=${x}&y=${y}&z=${z}`, credit: "© 高德地图 影像" },
+  };
+  function lngLatToTile(lon, lat, z) {
+    const n = Math.pow(2, z);
+    const xt = Math.floor((lon + 180) / 360 * n);
+    const rad = lat * Math.PI / 180;
+    const yt = Math.floor((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * n);
+    return [xt, yt];
+  }
+  function removeBaseMap() {
+    if (baseMapMesh) {
+      scene.remove(baseMapMesh);
+      baseMapMesh.geometry.dispose();
+      baseMapMesh.material.map?.dispose();
+      baseMapMesh.material.dispose();
+      baseMapMesh = null;
+    }
+  }
+  function loadBaseMap(kind) {
+    removeBaseMap();
+    if (kind === "none") { toast("底图已关闭"); return; }
+    const prov = PROVIDERS[kind];
+    if (!prov) return;
+    const [lon, lat] = THEME.mapCenter || [121.62, 29.75];
+    const z = THEME.mapZoom || 13;
+    const [xt, yt] = lngLatToTile(lon, lat, z);
+    const T = 3, S = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = T * S;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#0a1a12"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let ok = 0;
+    const jobs = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const x = xt + dx, y = yt + dy;
+        jobs.push(new Promise(res => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => { ctx.drawImage(img, (dx + 1) * S, (dy + 1) * S); ok++; res(); };
+          img.onerror = () => res();
+          img.src = prov.url(x, y, z);
+        }));
+      }
+    }
+    Promise.all(jobs).then(() => {
+      if (!ok) { toast(prov.name + " 瓦片加载失败（网络限制）", "err"); return; }
+      const tex = new THREE.CanvasTexture(canvas);
+      const geo = new THREE.PlaneGeometry(232, 190);
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.94 });
+      baseMapMesh = new THREE.Mesh(geo, mat);
+      baseMapMesh.rotation.x = -Math.PI / 2;
+      baseMapMesh.position.y = -19.2;
+      scene.add(baseMapMesh);
+      // 归属标注
+      let credit = document.getElementById("gvz-credit");
+      if (!credit) {
+        credit = document.createElement("div");
+        credit.id = "gvz-credit";
+        const mv = document.getElementById("mine-view") || document.body;
+        mv.appendChild(credit);
+      }
+      credit.textContent = prov.credit;
+      toast("底图已加载 → " + prov.name + `（${ok}/9 瓦片）`, "ok");
+    });
+  }
+  dock.querySelectorAll("[data-basemap]").forEach(b => b.addEventListener("click", () => {
+    dock.querySelectorAll("[data-basemap]").forEach(x => x.classList.toggle("active", x === b));
+    loadBaseMap(b.dataset.basemap);
+  }));
+
+  /* ---------- 面板数据活脉动 ---------- */
+  setInterval(() => {
+    $$(".bar").forEach(b => {
+      if (b.dataset.gvzBase === undefined) b.dataset.gvzBase = parseFloat(b.style.width) || 50;
+      const base = parseFloat(b.dataset.gvzBase);
+      const next = Math.min(98, Math.max(6, base + (Math.random() - 0.5) * 5));
+      b.style.width = next.toFixed(1) + "%";
+    });
+    $$(".gvz-live-dot").forEach(d => d.classList.toggle("on"));
+  }, 3200);
+
+  /* ---------- 状态条呼吸点 ---------- */
+  $$(".status-tag, .status-chip").forEach(chip => {
+    const dot = document.createElement("span");
+    dot.className = "gvz-live-dot on";
+    chip.prepend(dot);
+  });
+
+  toast(THEME.greet, "ok");
+})();
+
+/* ================== end enhance layer ================== */
+</script>
+</body>
+</html>
